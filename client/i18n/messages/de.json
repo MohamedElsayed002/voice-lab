@@ -1,0 +1,87 @@
+{
+  "Header": {
+    "features": "Funktionen",
+    "workflow": "So funktioniert's",
+    "audioDemo": "Audio-Demo",
+    "pricing": "Preise",
+    "faq": "FAQ",
+    "login": "Anmelden",
+    "getStarted": "Loslegen",
+    "primaryNavigation": "Hauptnavigation",
+    "openMenu": "Navigationsmenü öffnen",
+    "closeMenu": "Navigationsmenü schließen"
+  },
+  "LocaleSwitcher": {
+    "switchLanguage": "Sprache zu {locale} wechseln",
+    "en": "Englisch",
+    "de": "Deutsch"
+  },
+  "Home": {
+    "metadata": {
+      "title": "PodForge | Startseite",
+      "description": "Erstelle aus deiner Idee einen Podcast mit KI-generierten Skripten, Stimmen und Studio-Audio."
+    },
+    "hero": {
+      "badge": "KI-Podcaststudio — jetzt in der Beta",
+      "title": "Mach aus jeder Idee einen Podcast",
+      "highlight": "in Minuten.",
+      "description": "Beschreibe dein Thema und wähle KI-Stimmen oder deine eigene Stimme. Erstelle eine komplette Folge mit Skript, Dialog, Studio-Audio und passendem Cover in unter vier Minuten.",
+      "createEpisode": "Erste Folge erstellen",
+      "listenSample": "Beispiel anhören",
+      "creators": "Podcast-Creator",
+      "episodeCount": "2.400+",
+      "episodesGenerated": "erstellte Folgen",
+      "trustedBy": "Von Creatorn weltweit genutzt",
+      "livePreview": "LIVE-VORSCHAU",
+      "episodeNumber": "Folge Nr. {number}",
+      "renderTime": "4 Min. Erstellung",
+      "demoTitle": "Die Zukunft der Remote-Arbeit",
+      "previewLabel": "Vorschau auf Folge 42: Die Zukunft der Remote-Arbeit",
+      "host": "Moderator",
+      "guest": "Gast",
+      "audioQuality": "Hochwertiges Stereo, 48 kHz",
+      "rewind": "10 Sekunden zurück",
+      "forward": "10 Sekunden vor"
+    },
+    "trusted": {
+      "label": "Audio- und KI-Tools",
+      "caption": "Unterstützt durch führende Audio- und KI-Infrastruktur"
+    },
+    "process": {
+      "eyebrow": "So funktioniert's",
+      "title": "In 3 Schritten von der Idee zur Folge",
+      "intro": "Thema festlegen, Stimmen zuweisen und eine Folge zur Prüfung erstellen.",
+      "step": "SCHRITT {number}",
+      "describe": "Beschreiben",
+      "describeDescription": "Lege Thema und Format fest: Solo-Folge, Gespräch oder Podiumsrunde.",
+      "chooseVoices": "Stimmen auswählen",
+      "chooseVoicesDescription": "Weise jeder Person eine Stimme zu oder bringe deine eigene Aufnahme mit.",
+      "generate": "Erstellen",
+      "generateDescription": "Prüfe Skript und Sprecherrollen und erstelle anschließend die fertige Folge.",
+      "exampleTopic": "BEISPIELTHEMA",
+      "conversation": "Gespräch",
+      "remoteTopic": "Wie bleiben verteilte Teams verbunden?",
+      "work": "Arbeit",
+      "culture": "Kultur",
+      "host": "Moderator",
+      "guest": "Gast",
+      "voice": "Stimme {number}",
+      "speakerAssignments": "Beispiel für Sprecherzuweisungen",
+      "deliverables": "Inhalte der Folge",
+      "script": "Skript und Dialog",
+      "voiceTracks": "Sprecherspuren",
+      "mixedAudio": "Abgemischte Folge"
+    }
+  },
+  "Explore": {
+    "title": "Folgen entdecken",
+    "description": "Entdecke Podcast-Folgen, die mit PodForge erstellt wurden."
+  },
+  "Auth": {
+    "login": "Anmelden",
+    "register": "Konto erstellen"
+  },
+  "Studio": {
+    "title": "Podcaststudio"
+  }
+}

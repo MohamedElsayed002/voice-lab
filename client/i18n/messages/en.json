@@ -1,0 +1,87 @@
+{
+  "Header": {
+    "features": "Features",
+    "workflow": "How it works",
+    "audioDemo": "Audio demo",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "login": "Log in",
+    "getStarted": "Get started",
+    "primaryNavigation": "Main navigation",
+    "openMenu": "Open navigation menu",
+    "closeMenu": "Close navigation menu"
+  },
+  "LocaleSwitcher": {
+    "switchLanguage": "Switch language to {locale}",
+    "en": "English",
+    "de": "Deutsch"
+  },
+  "Home": {
+    "metadata": {
+      "title": "PodForge | Home",
+      "description": "Create a podcast from your idea with AI-generated scripts, voices, and studio-quality audio."
+    },
+    "hero": {
+      "badge": "AI Podcast Studio — Now in Beta",
+      "title": "Turn any idea into a podcast",
+      "highlight": "in minutes.",
+      "description": "Describe your topic. Pick your voices — AI or your own. Get a full episode: script, dialogue, studio audio, and tailored cover art in under 4 minutes.",
+      "createEpisode": "Create your first episode",
+      "listenSample": "Listen to sample",
+      "creators": "Podcast creators",
+      "episodeCount": "2,400+",
+      "episodesGenerated": "episodes generated",
+      "trustedBy": "Trusted by creators worldwide",
+      "livePreview": "LIVE PREVIEW",
+      "episodeNumber": "Episode #{number}",
+      "renderTime": "4 min render",
+      "demoTitle": "The Future of Remote Work",
+      "previewLabel": "Static preview of episode 42, The Future of Remote Work",
+      "host": "Host",
+      "guest": "Guest",
+      "audioQuality": "High Fidelity Stereo 48kHz",
+      "rewind": "Rewind 10 seconds",
+      "forward": "Forward 10 seconds"
+    },
+    "trusted": {
+      "label": "Audio and AI tools",
+      "caption": "Powered by industry-leading audio & AI infrastructure"
+    },
+    "process": {
+      "eyebrow": "How it works",
+      "title": "From idea to episode in 3 steps",
+      "intro": "Choose a topic, assign the voices, and create an episode ready to review.",
+      "step": "STEP {number}",
+      "describe": "Describe",
+      "describeDescription": "Set a topic and format. Start with a solo episode, a conversation, or a panel.",
+      "chooseVoices": "Choose voices",
+      "chooseVoicesDescription": "Assign a voice to each speaker, or bring your own recording into the episode.",
+      "generate": "Generate",
+      "generateDescription": "Review the script and voice direction, then create the finished episode.",
+      "exampleTopic": "EXAMPLE TOPIC",
+      "conversation": "Conversation",
+      "remoteTopic": "How remote teams stay connected",
+      "work": "Work",
+      "culture": "Culture",
+      "host": "Host",
+      "guest": "Guest",
+      "voice": "Voice {number}",
+      "speakerAssignments": "Example speaker assignments",
+      "deliverables": "Episode deliverables",
+      "script": "Script and dialogue",
+      "voiceTracks": "Speaker voice tracks",
+      "mixedAudio": "Mixed episode audio"
+    }
+  },
+  "Explore": {
+    "title": "Explore episodes",
+    "description": "Discover podcast episodes created with PodForge."
+  },
+  "Auth": {
+    "login": "Log in",
+    "register": "Create your account"
+  },
+  "Studio": {
+    "title": "Podcast studio"
+  }
+}
