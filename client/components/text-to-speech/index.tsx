@@ -1,0 +1,205 @@
+"use client"
+
+import { useState } from "react"
+import { useForm, useWatch } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { AudioLines, PanelRightClose, PanelRightOpen } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { useVoices } from "@/hooks/use-voices"
+import { Settings } from "./settings"
+import { History } from "./history"
+import { VoiceAvatar } from "../voices/voice-avatar"
+import { Textarea } from "../ui/textarea"
+import { Label } from "../ui/label"
+import { textToSpeechSchema, type TextToSpeechFormValues } from "./form-schema"
+import { textSuggestions } from "./constants"
+
+const MAX_TEXT_LENGTH = 2000
+
+
+
+export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
+
+  const [settingsOpen, setSettingsOpen] = useState(true)
+  const [content,setContent] = useState<"settings" | "history">("settings")
+
+  const form = useForm<TextToSpeechFormValues>({
+    resolver: zodResolver(textToSpeechSchema),
+    mode: "onChange",
+    defaultValues: {
+      text: "",
+      voiceId: voiceId ?? "",
+      stability: 8,
+    },
+  })
+  
+  const text = useWatch({ control: form.control, name: "text" })
+  const selectedVoiceId = useWatch({ control: form.control, name: "voiceId" })
+  const voicesQuery = useVoices()
+  const selectedVoice = voicesQuery.data?.find((voice) => voice.id === selectedVoiceId)
+  const textTooLong = text.length > MAX_TEXT_LENGTH
+
+  function handleGenerate(values: TextToSpeechFormValues) {
+    console.log(values.text, values.voiceId,values.stability)
+  }
+
+  return (
+    <form
+      className="flex min-h-0 flex-1"
+      onSubmit={form.handleSubmit(handleGenerate)}
+    >
+      <main className="min-w-0 flex-1 p-6" aria-label="Text to speech content">
+        <header className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold">Text to speech</h1>
+            {selectedVoice && (
+              <div className="mt-3 flex min-w-0 items-center gap-3">
+                <VoiceAvatar seed={selectedVoice.id} name={selectedVoice.name} className="size-12"/>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{selectedVoice.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {selectedVoice.language} · {selectedVoice.category.replaceAll("_", " ")}
+                  </p>
+                </div>
+              </div>
+            )}
+
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label={settingsOpen ? "Close voice settings" : "Open voice settings"}
+            aria-expanded={settingsOpen}
+            onClick={() => setSettingsOpen((open) => !open)}
+          >
+            {settingsOpen ? <PanelRightClose /> : <PanelRightOpen />}
+          </Button>
+        </header>
+        <section className="mt-6 rounded-xl border bg-card p-4 shadow-sm sm:p-5" aria-labelledby="script-label">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Label id="script-label" htmlFor="speech-text" className="text-sm font-semibold">
+              Text to speak
+            </Label>
+            <span
+              className={`text-xs tabular-nums ${textTooLong ? "font-medium text-destructive" : "text-muted-foreground"}`}
+              aria-live="polite"
+            >
+              {text.length.toLocaleString()} / {MAX_TEXT_LENGTH.toLocaleString()}
+            </span>
+          </div>
+          <Textarea
+            id="speech-text"
+            placeholder="Write or paste the words you want your voice to say..."
+            aria-describedby="speech-text-help speech-text-error"
+            aria-invalid={textTooLong || Boolean(form.formState.errors.text)}
+            className={`field-sizing-fixed h-[min(60vh,560px)] min-h-[320px] resize-y rounded-xl p-4 text-base leading-7 placeholder:text-muted-foreground/70 ${
+              textTooLong
+                ? "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
+                : ""
+            }`}
+            {...form.register("text")}
+          />
+          <div className="mt-2 flex min-h-5 items-start justify-between gap-3">
+            <p id="speech-text-help" className="text-xs text-muted-foreground">
+              Add your script or choose a tone below to start with a sample.
+            </p>
+            {textTooLong && (
+              <p id="speech-text-error" role="alert" className="shrink-0 text-xs font-medium text-destructive">
+                Keep your text under 2,000 characters.
+              </p>
+            )}
+          </div>
+          {!textTooLong && <span id="speech-text-error" className="sr-only" />}
+
+          <div className="mt-6 border-t pt-5">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold">Need a starting point?</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Pick a tone to fill the editor with an example. You can edit it afterward.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {textSuggestions.map((suggestion) => (
+                <Button
+                  key={suggestion.tone}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => form.setValue("text", suggestion.text, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  })}
+                  className="rounded-full px-3"
+                >
+                  {suggestion.tone}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 flex flex-col-reverse items-start justify-between gap-3 border-t pt-5 sm:flex-row sm:items-center">
+            <p className="text-xs text-muted-foreground">
+              {selectedVoice
+                ? `Ready to speak with ${selectedVoice.name}.`
+                : "Choose a voice in the settings panel to continue."}
+            </p>
+            <Button
+              type="submit"
+              size="lg"
+              disabled={!text.trim() || textTooLong || !selectedVoice || form.formState.isSubmitting}
+              className="w-full gap-2 sm:w-auto"
+            >
+              <AudioLines aria-hidden="true" />
+              Generate audio
+            </Button>
+          </div>
+        </section>
+      </main>
+
+      <aside
+        aria-label="Voice settings"
+        aria-hidden={!settingsOpen}
+        className={`shrink-0 overflow-hidden border-l bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear ${
+        settingsOpen ? "w-2/3 md:w-1/3" : "w-0 border-l-0"
+        }`}
+      >
+        <div className="w-full min-w-0">
+          <div className="flex flex-col gap-0.5 p-4">
+            <div className="grid grid-cols-2 border-b" role="tablist" aria-label="Voice settings sections">
+              {(["settings", "history"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  id={`${tab}-tab`}
+                  type="button"
+                  role="tab"
+                  aria-selected={content === tab}
+                  aria-controls={`${tab}-panel`}
+                  tabIndex={content === tab ? 0 : -1}
+                  onClick={() => setContent(tab)}
+                  className={`border-b-2 px-3 py-2.5 text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
+                    content === tab
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {/* Content */}
+            <div id={`${content}-panel`} role="tabpanel" aria-labelledby={`${content}-tab`} className="pt-3">
+              {content === "settings" ? (
+                <Settings form={form} />
+              ) : (
+                <History />
+              )}
+            </div>
+          </div>
+        </div>
+      </aside>
+    </form>
+  )
+}

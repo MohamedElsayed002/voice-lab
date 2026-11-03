@@ -30,6 +30,7 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import Link from "next/link";
+import { useAuthStore } from "@/store/auth.store";
 
 interface MenuItem {
   title: string;
@@ -85,6 +86,7 @@ function NavSection({ label, items, pathname }: NavSectionProps) {
 export function DashboardSidebar() {
   const pathname = usePathname();
   const { open } = useSidebar();
+  const user = useAuthStore((state) => state.user);
   const mainMenuItems: MenuItem[] = [
     {
       title: "Dashboard",
@@ -171,8 +173,10 @@ export function DashboardSidebar() {
           <SidebarMenu>
             <SidebarMenuItem className="flex items-center">
               {/* User button */}
-              <span className="w-8 h-8 bg-red-100 rounded-full text-center">A</span>
-              {open && <p className="hidden md:block">Mohamed Elsayed</p>}
+              <span className="flex size-8 items-center justify-center rounded-full bg-red-100 text-sm text-red-900">
+                {(user?.name ?? user?.email ?? "A").charAt(0).toUpperCase()}
+              </span>
+              {open && <p className="hidden truncate text-sm md:block">{user?.name ?? user?.email ?? "Account"}</p>}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>

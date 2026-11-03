@@ -18,8 +18,8 @@ export const Header = () => {
             <HeaderNavigationLinks className="hidden gap-6 text-sm text-muted-foreground lg:flex" />
             <div className="hidden items-center gap-2 lg:flex">
                 <LocaleSwitcher />
-                <Button variant="ghost">{t("login")}</Button>
-                <Button variant="secondary">{t("getStarted")}</Button>
+                <Button render={<Link href="/login" />} variant="ghost">{t("login")}</Button>
+                <Button render={<Link href="/register" />} variant="secondary">{t("getStarted")}</Button>
             </div>
             <MobileNavigation />
         </header>

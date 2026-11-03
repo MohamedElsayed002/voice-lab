@@ -139,3 +139,21 @@
     @apply font-sans;
   }
 }
+
+@keyframes voice-speaking {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(249 115 22 / 22%); }
+  50% { box-shadow: 0 0 0 7px rgb(249 115 22 / 0%); }
+}
+
+.voice-speaking {
+  animation: voice-speaking 1.8s ease-out infinite;
+}
+
+@keyframes voice-orb-drift {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-speaking { animation: none; }
+  .voice-orb__sheen { animation: none !important; }
+}

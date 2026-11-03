@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { HeaderNavigationLinks } from "./header-navigation-links"
 import { LocaleSwitcher } from "../locale-switcher"
+import { Link } from "@/i18n/navigation"
 
 export function MobileNavigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -39,10 +40,10 @@ export function MobileNavigation() {
           />
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
             <LocaleSwitcher onSwitch={closeMenu} />
-            <Button className="sm:inline-flex" variant="ghost">
+            <Button className="sm:inline-flex" render={<Link href="/login" onClick={closeMenu} />} variant="ghost">
               {t("login")}
             </Button>
-            <Button variant="secondary">{t("getStarted")}</Button>
+            <Button render={<Link href="/register" onClick={closeMenu} />} variant="secondary">{t("getStarted")}</Button>
           </div>
         </div>
       )}

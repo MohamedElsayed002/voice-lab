@@ -6,6 +6,9 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/provider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,7 +46,10 @@ export default async function LocaleLayout({
     >
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider messages={messages}>
-          {children}
+          <NuqsAdapter>
+            <AuthProvider>{children}</AuthProvider>
+          </NuqsAdapter>
+          <Toaster/>
         </NextIntlClientProvider>
       </body>
     </html>

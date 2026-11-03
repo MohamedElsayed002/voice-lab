@@ -1,9 +1,14 @@
+import { TextToSpeech } from "@/components/text-to-speech";
 
+type TextToSpeechPageProps = {
+    searchParams: Promise<{ voiceId?: string | string[] }>
+}
 
-export default function TextToSpeechPage() {
+export default async function TextToSpeechPage({ searchParams }: TextToSpeechPageProps) {
+    const voiceIdParam = (await searchParams).voiceId
+    const voiceId = typeof voiceIdParam === "string" ? voiceIdParam : undefined
+
     return (
-        <div className="min-h-screen grid place-items-center">
-            <h1 className="text-7xl font-bold">Text to Speech</h1>
-        </div>
+       <TextToSpeech key={voiceId ?? "no-voice"} voiceId={voiceId}/>
     )
 }

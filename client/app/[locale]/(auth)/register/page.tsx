@@ -1,12 +1,10 @@
 
-import { useTranslations } from "next-intl"
+import { RegisterForm } from "@/components/auth/register-form"
 
 export default function RegisterPage() {
-  const t = useTranslations("Auth")
-
   return (
-    <main>
-      <h1>{t("register")}</h1>
+    <main className="flex min-h-svh w-full items-center justify-center px-5 py-8 sm:px-8">
+      <RegisterForm />
     </main>
   )
 }

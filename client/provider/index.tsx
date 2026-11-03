@@ -1,10 +1,31 @@
 
-import {NextIntlClientProvider} from 'next-intl';
+"use client"
 
-export const RootLayout = ({children} : {children: React.ReactNode}) => {
-    return (
-        <NextIntlClientProvider>
-            {children}
-        </NextIntlClientProvider>
-    )
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { useState, type ReactNode } from "react"
+import { useAuthUser } from "@/hooks/use-auth"
+
+function AuthStateBridge() {
+  useAuthUser()
+  return null
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            refetchOnWindowFocus: false,
+          },
+        },
+      }),
+  )
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthStateBridge />
+      {children}
+    </QueryClientProvider>
+  )
 }
