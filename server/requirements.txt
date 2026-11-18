@@ -1,9 +1,12 @@
 fastapi>=0.115,<1.0
+python-multipart>=0.0.20,<1.0
+modal>=1.0,<2.0
 uvicorn[standard]>=0.34,<1.0
 alembic>=1.13,<2.0
 mangum
 boto3
 httpx
+openai>=1.0,<3.0
 sqlalchemy
 asyncpg
 python-jose[cryptography]
@@ -16,3 +19,6 @@ pytest
 pytest-asyncio
 strands-agents-tools
 strands-agents
+chatterbox-tts==0.1.7
+numpy>=1.26,<3.0
+torch>=2.0,<3.0

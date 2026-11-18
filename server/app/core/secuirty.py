@@ -18,7 +18,7 @@ def verify_password(plain_password: str,hashed_password: str) -> bool:
     )
 
 
-def create_access_token(subject: str | Any, extra_data: dict = {}) -> str:
+def create_access_token(subject: str | Any, extra_data: dict | None = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
     )
@@ -27,7 +27,7 @@ def create_access_token(subject: str | Any, extra_data: dict = {}) -> str:
         "sub": str(subject),
         "exp": expire,
         "type": "access",
-        **extra_data
+        **(extra_data or {})
     }
 
     return jwt.encode(

@@ -6,8 +6,8 @@ import { locale as getRootLocale } from "next/root-params";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getPathname } from "@/i18n/navigation";
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { auth } from "@/lib/auth/server";
+import { UserDropdown } from "@/components/shared/user-dropdown";
 
 function StudioShell({
     children,
@@ -22,7 +22,7 @@ function StudioShell({
             <SidebarInset className="min-h-0 min-w-0">
                 <div className="flex items-start justify-between gap-4 border-b border-border p-4">
                     <SidebarTrigger />
-                    <SignOutButton />
+                    <UserDropdown/>
                 </div>
                 <main className="flex min-h-0 flex-1 flex-col">
                     {children}

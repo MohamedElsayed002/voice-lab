@@ -4,6 +4,8 @@ from typing import Optional
 from urllib.parse import urlsplit
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import AliasChoices, Field
+
 
 SERVER_DIR = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = SERVER_DIR.parent
@@ -16,6 +18,38 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
+
+    tts_provider: str = Field(
+        default="mock",
+        validation_alias=AliasChoices("TTS_PROVIDER", "tts_provider"),
+    )
+    llm_provider: str = "mock"
+
+    huggingface_token: str | None = Field(
+        default=None, validation_alias=AliasChoices("HUGGINGFACE_TOKEN","HF_TOKEN")
+    )
+
+    huggingface_tts_model: str = "k2-fsa/OmniVoice"
+    huggingface_device: str = "auto" # auto | cpu | cuda
+
+    openai_tts_model: str = Field(
+        default="gpt-4o-mini-tts",
+        validation_alias=AliasChoices("OPENAI_TTS_MODEL", "openai_tts_model"),
+    )
+    openai_tts_voice: str = Field(
+        default="coral",
+        validation_alias=AliasChoices("OPENAI_TTS_VOICE", "openai_tts_voice"),
+    )
+
+    storage_dir: Path = Path("storage_data")
+
+    # SQLite by default so the project runs with zero external services.
+    # Point this at a Postgres URL later without touching any service code,
+    # since all DB access goes through SQLAlchemy sessions.
+    fake_database_url: str = "sqlite:///./voice_studio.db"
+
+    voices_dir: Path = Path("voices_data")
+
 
     DATABASE_URL: str
     DATABASE_URL_UNPOOLED: Optional[str] = None
@@ -32,6 +66,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000"
     BUCKET_NAME: str 
     AWS_REGION: str 
+    S3_ENDPOINT_URL: Optional[str] = None
     BEDROCK_MODEL_ID: str 
 
     OPENAI_API_KEY: str
@@ -45,6 +80,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(SERVER_DIR / ".env", PROJECT_ROOT / ".env.local"),
         case_sensitive=True,
+        extra="ignore",
+        env_file_encoding="utf-8"
     )
 
     # Computer helpers

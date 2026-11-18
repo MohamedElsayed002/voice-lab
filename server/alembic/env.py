@@ -8,14 +8,14 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import settings
-from app.models import Voice
+from app.models import AuditLog, Generation, User, Voice
 
 config = context.config
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-target_metadata = Voice.metadata
+target_metadata = User.metadata
 
 
 # python -m alembic upgrade head

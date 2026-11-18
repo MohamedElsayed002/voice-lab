@@ -7,6 +7,7 @@ import { authClient } from "@/lib/auth/client"
 import { useQueryClient } from "@tanstack/react-query"
 import { authUserQueryKey } from "@/hooks/use-auth"
 import { useAuthStore } from "@/store/auth.store"
+import { LogOut } from "lucide-react"
 
 export function SignOutButton() {
   const t = useTranslations("Auth")
@@ -35,12 +36,13 @@ export function SignOutButton() {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex w-full flex-col items-start gap-1">
       <button
-        className="rounded-md border border-border px-3 py-1 text-sm"
+        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-popover-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
         onClick={signOut}
         type="button"
       >
+        <LogOut aria-hidden="true" className="size-4 shrink-0" />
         {t("signOut")}
       </button>
       {error && (

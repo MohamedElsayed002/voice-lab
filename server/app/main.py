@@ -1,21 +1,38 @@
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import settings
 from app.core.database import engine
+from app.exceptions.handlers import register_exception_handlers
+from app.routes.audit_logs import router as audit_logs_router
 from app.routes.auth import router as auth_router
 from app.routes.text_generation import router as text_generation_router
+from app.routes.voices import router as voices_router
 
+
+from app.db.session_2 import init_db
+
+from app.schema.generation import GenerationRequest, GenerationResponse
+from app.services.generation import GenerationService
+from app.core.dependencies import get_generation_service, get_tts_provider
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-    yield
-    await engine.dispose()
+    try:
+        init_db()
+        yield
+    finally:
+        try:
+            if get_tts_provider.cache_info().currsize:
+                await get_tts_provider().aclose()
+        finally:
+            get_tts_provider.cache_clear()
+            await engine.dispose()
 
 
 app = FastAPI(
@@ -28,19 +45,33 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["PUT", "POST", "PATCH", "OPTIONS", "GET", "DELETE"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "Accept",
-        "Origin",
-        "X-Request-With",
-        "Idempotency-Key",
-    ],
+    allow_methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+    expose_headers=["Accept-Ranges", "Content-Range", "Content-Length", "ETag"],
+    max_age=3000,
 )
 app.include_router(auth_router)
 app.include_router(text_generation_router)
+app.include_router(audit_logs_router)
+app.include_router(voices_router)
+register_exception_handlers(app)
 
+
+def _audio_url(generation_id: str) -> str:
+    return f"/api/v1/generations/{generation_id}/audio"
+
+
+@app.post('/generation')
+async def create_generation(
+    request: GenerationRequest,
+    service: GenerationService = Depends(get_generation_service)
+) -> GenerationResponse:
+    record = await service.create_generation(request)
+    return GenerationResponse(
+        id=record.id,
+        status=record.status,
+        audio_url=_audio_url(record.id) if record.status == "completed" else None,
+    )
 
 @app.get("/health", tags=["health"])
 def health_check() -> dict[str, str]:

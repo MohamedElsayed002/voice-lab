@@ -94,7 +94,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             placeholder="Write or paste the words you want your voice to say..."
             aria-describedby="speech-text-help speech-text-error"
             aria-invalid={textTooLong || Boolean(form.formState.errors.text)}
-            className={`field-sizing-fixed h-[min(60vh,560px)] min-h-[320px] resize-y rounded-xl p-4 text-base leading-7 placeholder:text-muted-foreground/70 ${
+            className={`field-sizing-fixed h-[min(40vh,560px)] resize-none min-h-[320px]  rounded-xl p-4 text-base leading-7 placeholder:text-muted-foreground/70 ${
               textTooLong
                 ? "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
                 : ""
