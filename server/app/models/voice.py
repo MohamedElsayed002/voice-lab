@@ -1,63 +1,71 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum as SAEnum
-from sqlalchemy import Index, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import Enum as SAEnum, ForeignKey, Index, String, Text, UniqueConstraint, and_
+from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
 
 from app.db.base import Base, generate_random_uuid
 from app.schema.voices import VoiceCategory, VoiceVariant
+from app.schema.visibility import VisibilityStatus
 
 if TYPE_CHECKING:
     from app.models.generations import Generation
+    from app.models.user import User
 
 
 class Voice(Base):
     __tablename__ = "voices"
     __table_args__ = (
-        UniqueConstraint("org_id", "id", name="uq_voices_org_id_id"),
-        Index("ix_voices_org_id", "org_id"),
+        UniqueConstraint("user_id", "id", name="uq_voices_user_id_id"),
+        Index("ix_voices_user_id", "user_id"),
+        Index("ix_voices_status", "status"),
     )
 
-    id: Mapped[str] = mapped_column(
-        String(36),
-        primary_key=True,
-        default=generate_random_uuid,
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_random_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
-    # Org is user id
-    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(256), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     category: Mapped[VoiceCategory] = mapped_column(
-        SAEnum(
-            VoiceCategory,
-            name="voice_category",
-            values_callable=lambda enum: [item.value for item in enum],
-        ),
+        SAEnum(VoiceCategory, name="voice_category", values_callable=lambda enum: [item.value for item in enum]),
         nullable=False,
         default=VoiceCategory.GENERAL,
         server_default=VoiceCategory.GENERAL.value,
     )
-    language: Mapped[str] = mapped_column(
-        String(36),
-        nullable=False,
-        default="en-US",
-        server_default="en-US",
-    )
+    language: Mapped[str] = mapped_column(String(36), nullable=False, default="en-US", server_default="en-US")
     variant: Mapped[VoiceVariant] = mapped_column(
-        SAEnum(
-            VoiceVariant,
-            name="voice_variant",
-            values_callable=lambda enum: [item.value for item in enum],
-        ),
+        SAEnum(VoiceVariant, name="voice_variant", values_callable=lambda enum: [item.value for item in enum]),
         nullable=False,
         default=VoiceVariant.SYSTEM,
         server_default=VoiceVariant.SYSTEM.value,
     )
-    s3_object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    status: Mapped[VisibilityStatus] = mapped_column(
+        SAEnum(
+            VisibilityStatus,
+            name="visibility_status",
+            values_callable=lambda enum: [item.value for item in enum],
+        ),
+        nullable=False,
+        default=VisibilityStatus.PRIVATE,
+        server_default=VisibilityStatus.PRIVATE.value,
+    )
+    audio_s3_object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    avatar_s3_object_key: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    reference_text: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    user: Mapped["User"] = relationship(back_populates="voices")
     generations: Mapped[list["Generation"]] = relationship(
+        "app.models.generations.Generation",
         back_populates="voice",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
+        primaryjoin=lambda: _generation_voice_join(),
+    )
+
+
+def _generation_voice_join():
+    from app.models.generations import Generation
+
+    return and_(
+        Voice.user_id == Generation.user_id,
+        Voice.id == foreign(Generation.voice_id),
     )

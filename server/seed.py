@@ -126,7 +126,7 @@ async def seed_system_voice(
             language=metadata.language,
             variant=VoiceVariant.SYSTEM,
             status=VisibilityStatus.PUBLIC,
-            s3_object_key="pending",
+            audio_s3_object_key="pending",
         )
         db.add(voice)
         await db.flush()
@@ -140,7 +140,7 @@ async def seed_system_voice(
     voice.language = metadata.language
     voice.variant = VoiceVariant.SYSTEM
     voice.status = VisibilityStatus.PUBLIC
-    voice.s3_object_key = object_key
+    voice.audio_s3_object_key = object_key
 
 
 async def seed_system_voices() -> None:
