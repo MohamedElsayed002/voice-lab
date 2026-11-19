@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth/server"
 import { routing } from "@/i18n/routing"
 import createMiddleware from "next-intl/middleware"
-import type { NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
 const handleI18nRouting = createMiddleware(routing)
 const protectedPaths = [
@@ -15,8 +15,11 @@ export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const locale = pathname.match(/^\/de(?:\/|$)/) ? "de" : "en"
   const pathWithoutLocale = pathname.replace(/^\/(?:en|de)(?=\/|$)/, "") || "/"
-  const response = handleI18nRouting(request)
-  const isProtected = protectedPaths.some(
+  const isVoiceAudioApi = pathname.startsWith("/api/voices/")
+  const response = isVoiceAudioApi
+    ? NextResponse.next()
+    : handleI18nRouting(request)
+  const isProtected = isVoiceAudioApi || protectedPaths.some(
     (path) =>
       pathWithoutLocale === path || pathWithoutLocale.startsWith(`${path}/`),
   )
@@ -72,5 +75,8 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/((?!api|trpc|_next|_vercel|.*\\..*).*)",
+  matcher: [
+    "/((?!api|trpc|_next|_vercel|.*\\..*).*)",
+    "/api/voices/:path*",
+  ],
 }

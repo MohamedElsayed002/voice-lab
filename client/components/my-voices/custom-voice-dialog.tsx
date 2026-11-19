@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { AudioLines, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -14,8 +15,10 @@ import {
 import { CustomVoiceForm } from "./custom-voice-form"
 
 export const CustomVoiceDialog = () => {
+    const [open, setOpen] = useState(false)
+
     return (
-        <Dialog>
+        <Dialog onOpenChange={setOpen} open={open}>
             <DialogTrigger
                 render={
                     <Button className="gap-2">
@@ -34,7 +37,7 @@ export const CustomVoiceDialog = () => {
                         Create a new voice profile with an audio sample to clone the voice.
                     </DialogDescription>
                 </DialogHeader>
-                <CustomVoiceForm />
+                <CustomVoiceForm onSuccess={() => setOpen(false)} />
             </DialogContent>
         </Dialog>
     )

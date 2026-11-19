@@ -1,10 +1,18 @@
 "use client"
 
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { parseAsString, parseAsStringEnum, useQueryStates } from "nuqs"
-import { getVoices } from "@/actions/voices"
+import {
+  createVoice,
+  getUserCustomVoice,
+  getUserCustomVoices,
+  getVoices,
+} from "@/actions/voices"
 
 export const voicesQueryKey = ["voices"] as const
+export const userCustomVoicesQueryKey = ["voices", "mine", "custom"] as const
+export const userCustomVoiceQueryKey = (voiceId: string) =>
+  [...userCustomVoicesQueryKey, voiceId] as const
 export type VoiceTab = "all" | "system" | "custom"
 
 const voiceLibrarySearchParams = {
@@ -23,6 +31,25 @@ export function useVoices() {
   })
 }
 
+export function useUserCustomVoices() {
+  return useQuery({
+    queryKey: userCustomVoicesQueryKey,
+    queryFn: getUserCustomVoices,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+}
+
+export function useUserCustomVoice(voiceId: string) {
+  return useQuery({
+    queryKey: userCustomVoiceQueryKey(voiceId),
+    queryFn: () => getUserCustomVoice(voiceId),
+    enabled: Boolean(voiceId),
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  })
+}
+
 export function useVoiceLibraryParams() {
   const [params, setParams] = useQueryStates(voiceLibrarySearchParams, {
     history: "replace",
@@ -36,4 +63,19 @@ export function useVoiceLibraryParams() {
     setCategory: (category: string) => setParams({ category }),
     setSelectedVoice: (voice: string | null) => setParams({ voice: voice ?? "" }),
   }
+}
+
+
+
+export function useCreateVoice() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationKey: ["create-voice"],
+    mutationFn: (formData: FormData) => createVoice(formData),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: voicesQueryKey }),
+        queryClient.invalidateQueries({ queryKey: userCustomVoicesQueryKey }),
+      ]),
+  })
 }

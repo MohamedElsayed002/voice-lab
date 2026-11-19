@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     agentFeedback: true,
+    serverActions: {
+      bodySizeLimit: "3mb"
+    }
   },
   cacheComponents: true,
   partialPrefetching: true,
