@@ -72,6 +72,28 @@ class VoiceService:
         if voice is None:
             raise NotFoundException("Voice", voice_id)
 
+        return await self._get_voice_audio_object(voice)
+
+    async def get_custom_voice_audio(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        voice_id: str,
+    ) -> dict[str, Any]:
+        result = await db.execute(
+            select(Voice).where(
+                Voice.id == voice_id,
+                Voice.user_id == user_id,
+                Voice.variant == VoiceVariant.CUSTOM,
+            )
+        )
+        voice = result.scalar_one_or_none()
+        if voice is None:
+            raise NotFoundException("Voice", voice_id)
+
+        return await self._get_voice_audio_object(voice)
+
+    async def _get_voice_audio_object(self, voice: Voice) -> dict[str, Any]:
         try:
             audio_object = await asyncio.to_thread(
                 self.s3_client.get_object,
@@ -83,6 +105,41 @@ class VoiceService:
             raise ServiceUnavailableException("Voice audio is temporarily unavailable") from error
 
         return audio_object
+
+    async def get_user_custom_voices(
+        self,
+        db: AsyncSession,
+        user_id: str,
+    ) -> list[dict[str, Any]]:
+        result = await db.execute(
+            select(Voice)
+            .where(
+                Voice.user_id == user_id,
+                Voice.variant == VoiceVariant.CUSTOM,
+            )
+            .order_by(Voice.name)
+        )
+        return [self._serialize_voice(voice) for voice in result.scalars().all()]
+
+    async def get_single_voice_user(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        voice_id: str,
+    ) -> dict[str, Any]:
+        result = await db.execute(
+            select(Voice).where(
+                Voice.user_id == user_id,
+                Voice.id == voice_id,
+                Voice.variant == VoiceVariant.CUSTOM,
+            )
+        )
+
+        voice = result.scalar_one_or_none()
+        if voice is None:
+            raise NotFoundException("Voice", voice_id)
+
+        return self._serialize_voice(voice)
 
     async def create_voice(
         self,
@@ -161,6 +218,9 @@ class VoiceService:
 
         return self._serialize_voice(voice)
 
+
+
+    # Helper functions
     async def _ensure_user(
         self,
         db: AsyncSession,

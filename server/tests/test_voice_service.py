@@ -1,10 +1,12 @@
+from datetime import datetime, timezone
 from io import BytesIO
 
 import pytest
 from starlette.datastructures import Headers, UploadFile
 
-from app.exceptions.handlers import ConflictException, ForbiddenException
+from app.exceptions.handlers import ConflictException, ForbiddenException, NotFoundException
 from app.models.user import User
+from app.models.voice import Voice
 from app.schema.voice import VoiceCreateFields, VoiceCreateRequest
 from app.schema.visibility import VisibilityStatus
 from app.schema.voices import VoiceCategory, VoiceVariant
@@ -28,6 +30,14 @@ class FakeS3Client:
     def delete_object(self, *, Bucket: str, Key: str) -> None:
         self.objects.pop(Key, None)
 
+    def get_object(self, *, Bucket: str, Key: str) -> dict:
+        body, content_type = self.objects[Key]
+        return {
+            "Body": BytesIO(body),
+            "ContentType": content_type,
+            "ContentLength": len(body),
+        }
+
     def generate_presigned_url(
         self,
         operation: str,
@@ -38,18 +48,44 @@ class FakeS3Client:
         return f"https://storage.test/{Params['Key']}?expires={ExpiresIn}"
 
 
+class FakeScalarsResult:
+    def __init__(self, voices: list[Voice]) -> None:
+        self.voices = voices
+
+    def all(self) -> list[Voice]:
+        return self.voices
+
+
+class FakeQueryResult:
+    def __init__(self, voices: list[Voice]) -> None:
+        self.voices = voices
+
+    def scalars(self) -> FakeScalarsResult:
+        return FakeScalarsResult(self.voices)
+
+    def scalar_one_or_none(self) -> Voice | None:
+        return self.voices[0] if self.voices else None
+
+
 class FakeAsyncSession:
     def __init__(
         self,
         *,
         fail_commit: bool = False,
         email_owner: str | None = None,
+        voice_results: list[Voice] | None = None,
     ) -> None:
         self.voice = None
         self.users: dict[str, User] = {}
         self.fail_commit = fail_commit
         self.email_owner = email_owner
+        self.voice_results = voice_results or []
+        self.executed_statement = None
         self.rolled_back = False
+
+    async def execute(self, statement):
+        self.executed_statement = statement
+        return FakeQueryResult(self.voice_results)
 
     async def get(self, model, identity: str):
         return self.users.get(identity) if model is User else None
@@ -110,6 +146,123 @@ def make_request(*, with_avatar: bool = True) -> VoiceCreateRequest:
         else None
     )
     return VoiceCreateRequest(fields=fields, audio=audio, avatar=avatar)
+
+
+@pytest.mark.asyncio
+async def test_get_user_custom_voices_returns_serialized_custom_voices() -> None:
+    voice = Voice(
+        id="voice-1",
+        user_id="user-1",
+        name="Warm narrator",
+        description="A clear, warm voice.",
+        category=VoiceCategory.AUDIOBOOK,
+        language="en",
+        variant=VoiceVariant.CUSTOM,
+        status=VisibilityStatus.PRIVATE,
+        audio_s3_object_key="custom/user-1/voice-1/audio.wav",
+        avatar_s3_object_key=None,
+        reference_text="A sample sentence.",
+        created_at=datetime.now(timezone.utc),
+    )
+    db = FakeAsyncSession(voice_results=[voice])
+    db.users["user-1"] = User(
+        id="user-1",
+        email="user@example.com",
+        hashed_password=None,
+    )
+    service = VoiceService(s3_client=FakeS3Client())
+
+    result = await service.get_user_custom_voices(db, "user-1")
+
+    assert len(result) == 1
+    assert result[0]["id"] == "voice-1"
+    assert result[0]["audio_url"].startswith("https://storage.test/")
+    assert result[0]["avatar_url"] is None
+    filters = list(db.executed_statement.whereclause.clauses)
+    assert [(filter.left.name, filter.right.value) for filter in filters] == [
+        ("user_id", "user-1"),
+        ("variant", VoiceVariant.CUSTOM),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_user_custom_voices_returns_empty_for_user_without_custom_voices() -> None:
+    service = VoiceService(s3_client=FakeS3Client())
+
+    result = await service.get_user_custom_voices(FakeAsyncSession(), "user-1")
+
+    assert result == []
+
+
+@pytest.mark.asyncio
+async def test_get_single_voice_user_returns_only_custom_voice_owned_by_user() -> None:
+    voice = Voice(
+        id="voice-1",
+        user_id="user-1",
+        name="Warm narrator",
+        description="A clear, warm voice.",
+        category=VoiceCategory.AUDIOBOOK,
+        language="en",
+        variant=VoiceVariant.CUSTOM,
+        status=VisibilityStatus.PRIVATE,
+        audio_s3_object_key="custom/user-1/voice-1/audio.wav",
+        avatar_s3_object_key=None,
+        reference_text="A sample sentence.",
+        created_at=datetime.now(timezone.utc),
+    )
+    db = FakeAsyncSession(voice_results=[voice])
+    service = VoiceService(s3_client=FakeS3Client())
+
+    result = await service.get_single_voice_user(db, "user-1", "voice-1")
+
+    assert result["id"] == "voice-1"
+    assert result["audio_url"].startswith("https://storage.test/")
+    filters = list(db.executed_statement.whereclause.clauses)
+    assert [(filter.left.name, filter.right.value) for filter in filters] == [
+        ("user_id", "user-1"),
+        ("id", "voice-1"),
+        ("variant", VoiceVariant.CUSTOM),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_single_voice_user_returns_not_found_for_missing_voice() -> None:
+    service = VoiceService(s3_client=FakeS3Client())
+
+    with pytest.raises(NotFoundException):
+        await service.get_single_voice_user(FakeAsyncSession(), "user-1", "missing")
+
+
+@pytest.mark.asyncio
+async def test_get_custom_voice_audio_requires_owned_custom_voice() -> None:
+    voice = Voice(
+        id="voice-1",
+        user_id="user-1",
+        name="Warm narrator",
+        description="A clear, warm voice.",
+        category=VoiceCategory.AUDIOBOOK,
+        language="en",
+        variant=VoiceVariant.CUSTOM,
+        status=VisibilityStatus.PRIVATE,
+        audio_s3_object_key="custom/user-1/voice-1/audio.wav",
+        avatar_s3_object_key=None,
+        reference_text="A sample sentence.",
+        created_at=datetime.now(timezone.utc),
+    )
+    s3_client = FakeS3Client()
+    s3_client.objects[voice.audio_s3_object_key] = (b"audio bytes", "audio/wav")
+    db = FakeAsyncSession(voice_results=[voice])
+    service = VoiceService(s3_client=s3_client)
+
+    audio_object = await service.get_custom_voice_audio(db, "user-1", "voice-1")
+
+    assert audio_object["Body"].read() == b"audio bytes"
+    filters = list(db.executed_statement.whereclause.clauses)
+    assert [(filter.left.name, filter.right.value) for filter in filters] == [
+        ("id", "voice-1"),
+        ("user_id", "user-1"),
+        ("variant", VoiceVariant.CUSTOM),
+    ]
 
 
 @pytest.mark.asyncio
