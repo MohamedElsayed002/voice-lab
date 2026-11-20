@@ -15,8 +15,8 @@ class AuditLog(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_random_uuid)
     event: Mapped[str] = mapped_column(String(256), nullable=False)
-    user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[str] = mapped_column(String(256), nullable=False)
     ip_address: Mapped[str | None] = mapped_column(String(256), nullable=True)

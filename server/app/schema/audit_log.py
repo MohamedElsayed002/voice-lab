@@ -9,7 +9,7 @@ class AuditLogResponse(BaseModel):
 
     id: str
     event: str
-    user_id: str
+    user_id: str | None
     status: str
     ip_address: str | None
     user_agent: str | None

@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int
+    JWT_ISSUER: str
+    JWT_AUDIENCE: str
 
     NEON_AUTH_BASE_URL: str
     NEON_AUTH_JWKS_URL: str

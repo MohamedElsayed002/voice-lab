@@ -10,7 +10,8 @@ from app.core.config import settings
 from app.core.database import engine
 from app.exceptions.handlers import register_exception_handlers
 from app.routes.audit_logs import router as audit_logs_router
-from app.routes.auth import router as auth_router
+# from app.routes.auth import router as auth_router
+from app.auth.routes.auth import router as auth_router
 from app.routes.text_generation import router as text_generation_router
 from app.routes.voices import router as voices_router
 

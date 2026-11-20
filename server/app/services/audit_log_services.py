@@ -75,7 +75,7 @@ class AuditLogService:
         self,
         event: str,
         status: str,
-        user_id: str,
+        user_id: str | None,
         request: Request | None = None,
         metadata: dict[str, Any] | None = None,
         commit: bool = False,
@@ -107,3 +107,6 @@ class AuditLogService:
             if self.db is not None:
                 await self.db.rollback()
             return None
+
+
+audit_service = AuditLogService()

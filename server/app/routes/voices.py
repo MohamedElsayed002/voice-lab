@@ -10,7 +10,7 @@ from app.core.dependencies import get_db
 from app.schema.voice import VoiceCreateFields, VoiceCreateRequest, VoiceResponse
 from app.schema.visibility import VisibilityStatus
 from app.schema.voices import VoiceCategory
-from app.services.auth_service import auth_service
+from app.auth.services.auth_service import auth_service
 from app.services.voices_services import VoiceService
 
 router = APIRouter(prefix="/voices", tags=["voices"])

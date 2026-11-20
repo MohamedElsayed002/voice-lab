@@ -33,3 +33,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     username: str | None
+    tier: str
+    onboard: bool
+    email_notification: bool
+    auth_provider: str
