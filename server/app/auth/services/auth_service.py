@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta, timezone
-
 from fastapi import Depends, HTTPException, status 
 from fastapi.security import (
     HTTPAuthorizationCredentials,
@@ -10,16 +8,12 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.dependencies import get_db
 from app.auth.services.token_service import (
-    create_access_token,
-    create_refresh_token,
     decode_access_token,
-    hash_refresh_token,
 )
+from app.auth.services.session_service import  session_service
 from app.exceptions.handlers import ConflictException 
-from app.models.session import AuthSession 
 from app.models.user import User, UserRole
 from app.auth.schemas.auth import (
     LoginRequest,
@@ -33,6 +27,8 @@ from .password_service import (
     verify_and_update_password
 )
 
+import jwt
+
 from app.services.audit_log_services import audit_service
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -41,6 +37,7 @@ class AuthService:
 
     def __init__(self):
         self.audit_service = audit_service
+        self.session_service = session_service
     # Helper func
     @staticmethod
     def _unauthorized(
@@ -74,46 +71,6 @@ class AuthService:
         return result.scalar_one_or_none()
 
 
-    async def _create_session(
-        self,
-        db: AsyncSession,
-        user: User
-    ) -> TokenResponse:
-
-        raw_refresh_token = create_refresh_token()
-
-        session = AuthSession(
-            user_id=user.id,
-            refresh_token_hash=hash_refresh_token(
-                raw_refresh_token
-            ),
-            expires_at=(
-                datetime.now(timezone.utc)
-                + timedelta(
-                    days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS
-                )
-            )
-        )
-
-        db.add(session)
-
-        # I need to generated session id before creating the jwt
-        await db.flush()
-
-        access_token = create_access_token(
-            user_id=user.id,
-            session_id=session.id,
-            role=user.role.value
-        )
-
-        await db.commit()
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=raw_refresh_token
-        )
-
-
     async def register(
             self,
             db: AsyncSession,
@@ -137,11 +94,13 @@ class AuthService:
             )
 
         user = User(
-            email,
-            username,
+            email=email,
+            username=username,
             hashed_password=hash_password(data.password),
             role=UserRole.USER,
-            is_active=True
+            is_active=True,
+            email_verified=False,
+            auth_provider="local"
         )
 
         db.add(user)
@@ -193,7 +152,7 @@ class AuthService:
         if updated_hash:
             user.hashed_password = updated_hash
 
-        return await self._create_session(db,user)
+        return await self.session_service.create_session(db, user)
 
 
     async def refresh(
@@ -201,65 +160,20 @@ class AuthService:
             db: AsyncSession,
             raw_refresh_token: str 
     ) -> TokenResponse:
-
-        token_hash = hash_refresh_token(raw_refresh_token)
-
-        result = await db.execute(
-            select(AuthSession)
-            .where(
-                AuthSession.refresh_token_hash == token_hash,
-                AuthSession.revoked_at.is_(None)
+        try:
+            return await self.session_service.refresh_session(
+                db,
+                raw_refresh_token,
             )
-            .with_for_update()
-        )
-
-        session = result.scalar_one_or_none()
-
-        if session is None:
-            raise self._unauthorized("Invalid refresh token")
-
-        now = datetime.now(timezone.utc)
-
-        if session.expires_at <= now:
-            session.revoked_at = now 
-            await db.commit()
-            raise self._unauthorized("Refresh token has expired")
-
-        user_result = await db.execute(
-            select(User).where(User.id == session.user_id)
-        )
-
-        user = user_result.scalar_one_or_none()
-
-        if user is None or not user.is_active:
-            session.revoked_at = now
-            await db.commit()
-            raise self._unauthorized("Account is unavailable")
-
-
-        # Rotate the refresh token on every successful refresh
-        new_refresh_token = create_refresh_token()
-
-        session.refresh_token_hash = hash_refresh_token(
-            new_refresh_token
-        )
-
-        session.expires_at = (
-            now + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
-        )
-
-        new_access_token = create_access_token(
-            user_id=user.id,
-            session_id=session.id,
-            role=user.role.value
-        )
-
-        await db.commit()
-
-        return TokenResponse(
-            access_token=new_access_token,
-            refresh_token=new_refresh_token
-        )
+        except ValueError as error:
+            detail = str(error)
+            if detail == "Invalid refresh token":
+                detail = "Invalid refresh token"
+            elif detail == "Expired refresh token":
+                detail = "Refresh token has expired"
+            elif detail == "User is unavailable":
+                detail = "Account is unavailable"
+            raise self._unauthorized(detail) from error
 
 
     async def logout(
@@ -267,22 +181,7 @@ class AuthService:
             db: AsyncSession,
             raw_refresh_token: str
     ) -> dict[str,str]:
-        
-        token_hash = hash_refresh_token(raw_refresh_token)
-
-        result = await db.execute(
-            select(AuthSession).where(
-                AuthSession.refresh_token_hash == token_hash,
-                AuthSession.revoked_at.is_(None)
-            )
-        )
-
-        session = result.scalar_one_or_none()
-
-        if session is not None:
-            session.revoked_at = datetime.now(timezone.utc)
-            await db.commit()
-
+        await self.session_service.revoke_session(db, raw_refresh_token)
         return { "message": "Logged out successfully"}
 
 
@@ -291,21 +190,7 @@ class AuthService:
             db:AsyncSession,
             user_id: str
     ) -> dict[str,str]:
-        result = await db.execute(
-            select(AuthSession).where(
-                AuthSession.user_id == user_id,
-                AuthSession.revoked_at.is_(None)
-            )
-        )
-
-        sessions = result.scalars().all()
-        now = datetime.now(timezone.utc)
-
-        for session in sessions:
-            session.revoked_at = now 
-
-        await db.commit()
-
+        await self.session_service.revoke_all(db, user_id)
         return {
             "message": "Logged out from all devices"
         }
@@ -328,7 +213,7 @@ class AuthService:
                 credentials.credentials
             )
 
-        except JWTError as error:
+        except jwt.InvalidTokenError as error:
             raise self._unauthorized() from error
 
         session_id = claims.get("sid")
@@ -337,21 +222,11 @@ class AuthService:
         if not session_id or not user_id:
             raise self._unauthorized()
 
-        now = datetime.now(timezone.utc)
-
-
-        # Checking the session means logout can invalidate
-        # access tokens immediately, not just refresh tokens.
-        session_result = await db.execute(
-            select(AuthSession.id).where(
-                AuthSession.id == session_id,
-                AuthSession.user_id == user_id,
-                AuthSession.revoked_at.is_(None),
-                AuthSession.expires_at > now,
-            )
-        )
-
-        if session_result.scalar_one_or_none() is None:
+        if not await self.session_service.validate_session(
+            db,
+            session_id,
+            user_id,
+        ):
             raise self._unauthorized("Session is no longer active")
 
         user_result = await db.execute(

@@ -62,8 +62,8 @@ class Settings(BaseSettings):
     JWT_ISSUER: str
     JWT_AUDIENCE: str
 
-    NEON_AUTH_BASE_URL: str
-    NEON_AUTH_JWKS_URL: str
+    # NEON_AUTH_BASE_URL: str
+    # NEON_AUTH_JWKS_URL: str
 
     CORS_ORIGINS: str = "http://localhost:3000"
     BUCKET_NAME: str 
@@ -91,13 +91,13 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",")]
 
-    @property
-    def neon_auth_issuer(self) -> str:
-        auth_origin_parts = urlsplit(self.NEON_AUTH_BASE_URL)
-        if not auth_origin_parts.scheme or not auth_origin_parts.netloc:
-            raise ValueError("NEON_AUTH_BASE_URL must be an absolute URL")
+    # @property
+    # def neon_auth_issuer(self) -> str:
+    #     auth_origin_parts = urlsplit(self.NEON_AUTH_BASE_URL)
+    #     if not auth_origin_parts.scheme or not auth_origin_parts.netloc:
+    #         raise ValueError("NEON_AUTH_BASE_URL must be an absolute URL")
 
-        return f"{auth_origin_parts.scheme}://{auth_origin_parts.netloc}"
+    #     return f"{auth_origin_parts.scheme}://{auth_origin_parts.netloc}"
 
     @property
     def is_production(self) -> bool:
