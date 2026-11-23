@@ -22,6 +22,9 @@ from app.schema.generation import GenerationRequest, GenerationResponse
 from app.services.generation import GenerationService
 from app.core.dependencies import get_generation_service, get_tts_provider
 
+from starlette.middleware.sessions import SessionMiddleware
+from app.auth.routes.oauth import router as oauth_router
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     try:
@@ -43,6 +46,14 @@ app = FastAPI(
 )
 
 app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SESSION_SECRET_KEY,
+    same_site="lax",
+    https_only=settings.is_production,
+    max_age=600,
+)
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
@@ -52,6 +63,7 @@ app.add_middleware(
     max_age=3000,
 )
 app.include_router(auth_router)
+app.include_router(oauth_router)
 app.include_router(text_generation_router)
 app.include_router(audit_logs_router)
 app.include_router(voices_router)

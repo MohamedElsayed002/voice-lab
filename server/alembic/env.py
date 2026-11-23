@@ -8,7 +8,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.core.config import settings
-from app.models import AuditLog, AuthAccount, AuthSession, Generation, User, Voice
+from app.models import AuditLog, AuthAccount, AuthSession, Generation, User, Voice, OAuthExchangeCode
 
 config = context.config
 

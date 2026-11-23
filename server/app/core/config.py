@@ -73,6 +73,22 @@ class Settings(BaseSettings):
 
     OPENAI_API_KEY: str
 
+
+    SESSION_SECRET_KEY: str
+    FRONTEND_URL: str = "http://localhost:3000"
+    GOOGLE_CLIENT_ID: str | None = None
+    GOOGLE_CLIENT_SECRET: str | None = None 
+    GOOGLE_REDIRECT_URI: str = (
+    "http://localhost:8000/auth/oauth/google/callback"
+    )   
+
+    GITHUB_CLIENT_ID: str | None = None
+    GITHUB_CLIENT_SECRET: str | None = None 
+    GITHUB_REDIRECT_URI: str = (
+    "http://localhost:8000/auth/oauth/github/callback"
+    )
+    OAUTH_EXCHANGE_CODE_EXPIRE_SECONDS: int = 60
+
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
     AWS_ACCESS_KEY_ID: Optional[str] = None
 
