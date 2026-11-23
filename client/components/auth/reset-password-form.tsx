@@ -10,9 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Link, useRouter } from "@/i18n/navigation"
-import { authClient } from "@/lib/auth/client"
-import { toast } from "sonner"
+import { Link } from "@/i18n/navigation"
 
 const resetPasswordSchema = z
   .object({
@@ -28,38 +26,14 @@ const resetPasswordSchema = z
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>
 
 export function ResetPasswordForm() {
-  const router = useRouter()
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { token: "", password: "", confirmPassword: "" },
   })
 
   async function handleSubmit(values: ResetPasswordValues) {
-    setPending(true)
-    setError(null)
-
-    try {
-      const result = await authClient.resetPassword({
-        newPassword: values.password,
-        token: values.token.trim(),
-      })
-
-      if (result.error) {
-        setError(result.error.message || "We could not reset your password. Check the token and try again.")
-        toast.error(result.error.message || "We could not reset your password. Check the token and try again.")
-        return
-      }
-
-      router.replace("/login")
-      router.refresh()
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "We could not reset your password. Try again.")
-      toast.error(caught instanceof Error ? caught.message : "We could not reset your password. Try again.")
-    } finally {
-      setPending(false)
-    }
+    console.log(values)
   }
 
   return (
@@ -139,15 +113,15 @@ export function ResetPasswordForm() {
             )}
           />
 
-          {error && <p className="text-xs text-destructive" role="alert">{error}</p>}
+          {/* {error && <p className="text-xs text-destructive" role="alert"></p>} */}
 
           <Button
             className="mt-1 h-10 w-full bg-gradient-to-r from-violet-600 to-cyan-400 text-xs font-semibold text-white hover:brightness-110"
             type="submit"
-            disabled={pending}
+            disabled={true}
           >
-            {pending ? "Updating..." : "Update password"}
-            {!pending && <ArrowRight aria-hidden="true" className="size-3.5" />}
+            {false ? "Updating..." : "Update password"}
+            {!true && <ArrowRight aria-hidden="true" className="size-3.5" />}
           </Button>
         </form>
 

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
@@ -11,6 +13,7 @@ from app.auth.providers.base import (
 class GoogleProvider(OAuthProvider):
 
     name = "google"
+    logger = logging.getLogger(__name__)
 
     def __init__(self, oauth: OAuth):
         self.client = oauth.create_client(self.name)
@@ -68,6 +71,10 @@ class GoogleProvider(OAuthProvider):
         except HTTPException:
             raise
         except Exception as error:
+            self.logger.warning(
+                "Google identity verification failed with %s",
+                type(error).__name__,
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Google authentication failed"

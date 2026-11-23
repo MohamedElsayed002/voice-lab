@@ -17,10 +17,8 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { Input } from "@/components/ui/input"
 import { Link } from "@/i18n/navigation"
 import { useLocale, useTranslations } from "next-intl"
-import { authClient } from "@/lib/auth/client"
-import { useRouter } from "next/navigation"
-import { useQueryClient } from "@tanstack/react-query"
-import { authUserQueryKey } from "@/hooks/use-auth"
+import { useSignin } from "@/hooks/use-auth"
+import { startOAuth } from "@/actions/oauth"
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address."),
@@ -29,20 +27,18 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
-type LoginFormProps = {
-  authError?: string
-}
 
-export function LoginForm({ authError }: LoginFormProps) {
+
+export function LoginForm() {
   const t = useTranslations("Auth")
   const locale = useLocale()
+
+  const { mutate: loginMutate, isPending: loginLoading } = useSignin()
+
   const [showPassword, setShowPassword] = useState(false)
   const [pending, setPending] = useState(false)
-  const [error, setError] = useState<string | null>(
-    authError === "account_not_linked" ? t("accountNotLinked") : null,
-  )
-  const router = useRouter()
-  const queryClient = useQueryClient()
+
+  const [error, setError] = useState<string | null>(null)
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -50,47 +46,21 @@ export function LoginForm({ authError }: LoginFormProps) {
   })
 
   async function handleSubmit(data: LoginFormValues) {
-    setPending(true)
-    setError(null)
-
-    try {
-      const response = await authClient.signIn.email({
-        email: data.email,
-        password: data.password,
-        callbackURL: "/",
-      })
-
-      if (response.error) {
-        setError(response.error.message || t("requestFailed"))
-        return
-      }
-
-      await queryClient.invalidateQueries({ queryKey: authUserQueryKey })
-      router.replace("/studio")
-      router.refresh()
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("requestFailed"))
-    } finally {
-      setPending(false)
-    }
+    loginMutate({
+      email: data.email,
+      password: data.password
+    })
   }
 
-  async function handleSignWithGoogle() {
+  async function handleSignInWithProvider(provider: "google" | "github") {
     setPending(true)
     setError(null)
 
     try {
-      const result = await authClient.signIn.social({
-        provider: "google",
-        newUserCallbackURL: "/studio",
-        callbackURL: locale === "en" ? "/studio" : `/${locale}/studio`,
-      })
-
-      if (result.error) {
-        setError(result.error.message || t("requestFailed"))
-      }
+      startOAuth(provider, locale)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("requestFailed"))
+      setPending(false)
     } finally {
       setPending(false)
     }
@@ -106,12 +76,11 @@ export function LoginForm({ authError }: LoginFormProps) {
       </CardHeader>
       <CardContent className="px-6 pb-7 sm:px-8 sm:pb-8">
         <Button
-          className="my-5 h-10 w-full border-white/[0.06] bg-[#222225] text-xs text-white hover:bg-[#2b2b30]"
+          className="my-3 h-10 w-full border-white/[0.06] bg-[#222225] text-xs text-white hover:bg-[#2b2b30]"
           disabled={pending}
-          onClick={handleSignWithGoogle}
+          onClick={() => handleSignInWithProvider("google")}
           type="button"
           variant="outline"
-          // tabIndex={1}
         >
           <Image
             src="/google.svg"
@@ -121,6 +90,22 @@ export function LoginForm({ authError }: LoginFormProps) {
             height={15}
           />
           {t("continueWithGoogle")}
+        </Button>
+        <Button
+          className="mb-3 h-10 w-full border-white/[0.06] bg-[#222225] text-xs text-white hover:bg-[#2b2b30]"
+          disabled={pending}
+          onClick={() => handleSignInWithProvider("github")}
+          type="button"
+          variant="outline"
+        >
+          <Image
+            src="/github.svg"
+            alt=""
+            aria-hidden="true"
+            width={15}
+            height={15}
+          />
+          {t("continueWithGitHub")}
         </Button>
 
         <div className="mb-5 flex items-center gap-3 text-[9px] font-medium tracking-wide text-white/40">
@@ -190,7 +175,7 @@ export function LoginForm({ authError }: LoginFormProps) {
                     <button
                       className="text-[9px] font-medium text-violet-300 hover:text-violet-200"
                       type="button"
-                      // tabIndex={3}
+                    // tabIndex={3}
                     >
                       <Link href="/forgot-password">
                         {t("forgotPassword")}
@@ -251,11 +236,11 @@ export function LoginForm({ authError }: LoginFormProps) {
           <Button
             className="mt-1 h-10 w-full bg-gradient-to-r from-violet-600 to-cyan-400 text-xs font-semibold text-white hover:brightness-110"
             type="submit"
-            disabled={pending}
+            disabled={pending || loginLoading}
             tabIndex={3}
           >
-            {pending ? t("working") : t("submitLogin")}
-            {!pending && <ArrowRight aria-hidden="true" className="size-3.5" />}
+            {(pending || loginLoading) ? t("working") : t("submitLogin")}
+            {!(pending || loginLoading) && <ArrowRight aria-hidden="true" className="size-3.5" />}
           </Button>
         </form>
 

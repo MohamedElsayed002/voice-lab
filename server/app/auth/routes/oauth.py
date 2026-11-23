@@ -1,7 +1,7 @@
 import hashlib
+import logging
 import secrets 
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
@@ -23,6 +23,7 @@ router = APIRouter(
     prefix="/auth/oauth",
     tags=["oauth"]
 )
+logger = logging.getLogger(__name__)
 
 def _hash_exchange_code(code: str) -> str:
     return hashlib.sha256(code.encode("utf-8")).hexdigest()
@@ -49,22 +50,27 @@ def _get_redirect_uri(provider: str) -> str:
 
 def _frontend_callback_url(
     *,
+    locale: str = "en",
     code: str | None = None,
     error: str | None = None,
 ) -> str:
+    callback_path = (
+        "/auth/callback" if locale == "en" else f"/{locale}/auth/callback"
+    )
+
     if code:
         return (
             f"{settings.FRONTEND_URL.rstrip('/')}"
-            f"/auth/callback#code={code}"
+            f"{callback_path}#code={code}"
         )
 
     if error:
         return (
             f"{settings.FRONTEND_URL.rstrip('/')}"
-            f"/auth/callback?error={error}"
+            f"{callback_path}?error={error}"
         )
 
-    return f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback"
+    return f"{settings.FRONTEND_URL.rstrip('/')}{callback_path}"
 
 
 @router.get("/{provider}")
@@ -74,6 +80,12 @@ async def start_oauth(
 ):
     provider_name = provider.lower()
     oauth_provider = get_oauth_provider(provider_name)
+
+    if provider_name in {"google", "github"}:
+        requested_locale = request.query_params.get("locale", "en")
+        request.session["oauth_locale"] = (
+            requested_locale if requested_locale in {"en", "de"} else "en"
+        )
 
     redirect_uri = _get_redirect_uri(provider_name)
 
@@ -90,6 +102,9 @@ async def oauth_callback(
     db: AsyncSession = Depends(get_db)
 ):
     provider_name = provider.lower()
+    locale = request.session.pop("oauth_locale", "en")
+    if locale not in {"en", "de"}:
+        locale = "en"
 
     try:
         oauth_provider = get_oauth_provider(provider_name)
@@ -126,23 +141,40 @@ async def oauth_callback(
         await db.commit()
 
         return RedirectResponse(
-            url=_frontend_callback_url(code=raw_code),
+            url=_frontend_callback_url(locale=locale, code=raw_code),
             status_code=status.HTTP_303_SEE_OTHER
         )
 
-    except HTTPException:
+    except HTTPException as error:
         await db.rollback()
+        logger.warning(
+            "OAuth callback rejected for provider %s with HTTP %s",
+            provider_name,
+            error.status_code,
+        )
 
         return RedirectResponse(
-            url=_frontend_callback_url(error="oauth_failed"),
+            url=_frontend_callback_url(locale=locale, error="oauth_failed"),
             status_code=status.HTTP_303_SEE_OTHER
         )
 
-    except Exception:
+    except Exception as error:
         await db.rollback()
+        original_error = getattr(error, "orig", None)
+        database_error_code = (
+            getattr(original_error, "sqlstate", None)
+            or getattr(original_error, "pgcode", None)
+            or "unavailable"
+        )
+        logger.error(
+            "OAuth callback failed for provider %s with %s (database code %s)",
+            provider_name,
+            type(error).__name__,
+            database_error_code,
+        )
 
         return RedirectResponse(
-            url=_frontend_callback_url(error="oauth_failed"),
+            url=_frontend_callback_url(locale=locale, error="oauth_failed"),
             status_code=status.HTTP_303_SEE_OTHER
         )
 

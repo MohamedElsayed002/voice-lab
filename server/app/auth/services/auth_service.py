@@ -35,9 +35,12 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 class AuthService:
 
-    def __init__(self):
+    def __init__(
+        self,
+    ):
         self.audit_service = audit_service
         self.session_service = session_service
+
     # Helper func
     @staticmethod
     def _unauthorized(
@@ -200,7 +203,7 @@ class AuthService:
             self,
             credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
             db: AsyncSession = Depends(get_db)
-    ) -> dict[str, str | None]:
+    ) -> dict[str, object]:
 
         if(
             credentials is None
@@ -246,7 +249,7 @@ class AuthService:
             "email": user.email,
             "name": user.username,
             "role": user.role.value,
-            "tier": user.tier,
+            "tier": user.tier.value,
             "avatar": user.avatar_url,
             "email_notification": user.email_notification
         }

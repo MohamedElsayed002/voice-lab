@@ -76,7 +76,7 @@ class OAuthService:
                 user = User(
                     email=email,
                     username=None,
-                    hash_password=None,
+                    hashed_password=None,
                     role=UserRole.USER,
                     auth_provider=identity.provider,
                     email_verified=True,

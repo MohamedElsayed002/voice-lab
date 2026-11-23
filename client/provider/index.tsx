@@ -1,9 +1,9 @@
 
 "use client"
 
+import { useAuthUser } from "@/hooks/use-auth"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useState, type ReactNode } from "react"
-import { useAuthUser } from "@/hooks/use-auth"
 
 function AuthStateBridge() {
   useAuthUser()

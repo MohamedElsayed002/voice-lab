@@ -8,9 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Link } from "@/i18n/navigation"
-import { authClient } from "@/lib/auth/client"
 import { useLocale } from "next-intl"
-import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 
 export function ForgotPasswordForm() {
@@ -23,29 +21,6 @@ export function ForgotPasswordForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setPending(true)
-    setError(null)
-    setSent(false)
-
-    try {
-      const result = await authClient.forgetPassword.emailOtp({
-        email: email
-      })
-
-      if (result.error) {
-        setError(result.error.message || "We couldn’t send a reset link. Try again.")
-        toast.error(result.error.message || "We couldn’t send a reset link. Try again.")
-        return
-      }
-      // ${window.location.origin}${locale === "en" ? "" : `/${locale}`}/reset-password
-      setSent(true)
-      router.replace(`/reset-password`)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "We couldn’t send a reset link. Try again.")
-      toast.error(caught instanceof Error ? caught.message : "We couldn’t send a reset link. Try again.")
-    } finally {
-      setPending(false)
-    }
   }
 
   return (

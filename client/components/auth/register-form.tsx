@@ -12,9 +12,11 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Link, useRouter } from "@/i18n/navigation"
-import { authClient } from "@/lib/auth/client"
 import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
+import { useRegister } from "@/hooks/use-auth"
+import { startOAuth } from "@/actions/oauth"
+
 const registerSchema = z.object({
   name: z.string().trim().min(1, "Enter your name.").max(80, "Name is too long."),
   email: z.string().email("Enter a valid email address."),
@@ -31,10 +33,14 @@ export function RegisterForm() {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+
+  const { mutate: mutateRegister, isPending: loadingRegister } = useRegister()
+
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", password: "" },
   })
+
   const password = useWatch({
     control: form.control,
     name: "password",
@@ -42,49 +48,30 @@ export function RegisterForm() {
   const passwordProgress = Math.min(password.length / 8, 1)
 
   async function handleSubmit(data: RegisterFormValues) {
-    setPending(true)
-    setError(null)
 
-    try {
-      const response = await authClient.signUp.email({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        callbackURL: locale === "en" ? "/studio" : `/${locale}/studio`,
-      })
-
-      if (response.error) {
-        setError(response.error.message || t("requestFailed"))
-        return
+    mutateRegister({
+      email: data.email,
+      password: data.password,
+      username: data.name
+    }, {
+      onSuccess: () => {
+        toast.success(`Check ${data.email} for a verification email, then sign in.`)
+        router.replace("/verify-otp")
+        router.refresh()
       }
+    })
 
-      toast.success(`Check ${data.email} for a verification email, then sign in.`)
-      router.replace("/verify-otp")
-      router.refresh()
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : t("requestFailed"))
-      toast.error(caught instanceof Error ? caught.message : t("requestFailed"))
-    } finally {
-      setPending(false)
-    }
   }
 
-  async function handleGoogleSignUp() {
+  async function handleSignInWithProvider(provider: "google" | "github") {
     setPending(true)
     setError(null)
 
     try {
-      const response = await authClient.signIn.social({
-        provider: "google",
-        newUserCallbackURL: "/studio",
-        callbackURL: locale === "en" ? "/studio" : `/${locale}/studio`,
-      })
-
-      if (response.error) {
-        setError(response.error.message || t("requestFailed"))
-      }
+      startOAuth(provider, locale)
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("requestFailed"))
+      setPending(false)
     } finally {
       setPending(false)
     }
@@ -104,7 +91,7 @@ export function RegisterForm() {
         <Button
           className="my-5 h-10 w-full border-white/[0.06] bg-[#222225] text-xs text-white hover:bg-[#2b2b30]"
           disabled={pending}
-          onClick={handleGoogleSignUp}
+          onClick={() => handleSignInWithProvider("google")}
           type="button"
           variant="outline"
         >
@@ -116,6 +103,22 @@ export function RegisterForm() {
             height={15}
           />
           {t("continueWithGoogle")}
+        </Button>
+        <Button
+          className="mb-3 h-10 w-full border-white/[0.06] bg-[#222225] text-xs text-white hover:bg-[#2b2b30]"
+          disabled={pending}
+          onClick={() => handleSignInWithProvider("github")}
+          type="button"
+          variant="outline"
+        >
+          <Image
+            src="/github.svg"
+            alt=""
+            aria-hidden="true"
+            width={15}
+            height={15}
+          />
+          {t("continueWithGitHub")}
         </Button>
 
         <div className="mb-5 flex items-center gap-3 text-[9px] font-medium tracking-wide text-white/40">
@@ -296,11 +299,11 @@ export function RegisterForm() {
           <Button
             className="mt-1 h-10 w-full bg-gradient-to-r from-violet-600 to-cyan-400 text-xs font-semibold text-white hover:brightness-110"
             type="submit"
-            disabled={pending}
+            disabled={pending || loadingRegister}
             tabIndex={4}
           >
-            {pending ? t("working") : t("submitRegister")}
-            {!pending && <ArrowRight aria-hidden="true" className="size-3.5" />}
+            {(pending || loadingRegister) ? t("working") : t("submitRegister")}
+            {!(pending || loadingRegister) && <ArrowRight aria-hidden="true" className="size-3.5" />}
           </Button>
         </form>
 

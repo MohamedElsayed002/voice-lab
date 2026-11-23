@@ -37,3 +37,17 @@ class UserResponse(BaseModel):
     onboard: bool
     email_notification: bool
     auth_provider: str
+
+
+class CurrentUserResponse(BaseModel):
+    id: str
+    email: str
+    name: str | None
+    role: str
+    tier: str
+    avatar: str | None
+    email_notification: bool
+
+
+class AuthMeResponse(BaseModel):
+    user: CurrentUserResponse

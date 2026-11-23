@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_db
 from app.schema.auth import (
+    AuthMeResponse,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
@@ -84,11 +85,11 @@ async def logout_all(
     )
 
 
-@router.get("/me")
+@router.get("/me", response_model=AuthMeResponse)
 async def read_current_user(
-    user: dict[str, str | None] = Depends(
+    user: dict[str, object] = Depends(
         auth_service.get_current_user
     ),
-) -> dict[str, dict[str, str | None]]:
+) -> dict[str, object]:
 
     return {"user": user}

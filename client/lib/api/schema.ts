@@ -72,6 +72,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout All */
+        post: operations["logout_all_auth_logout_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/me": {
         parameters: {
             query?: never;
@@ -83,6 +100,57 @@ export interface paths {
         get: operations["read_current_user_auth_me_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/oauth/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Start Oauth */
+        get: operations["start_oauth_auth_oauth__provider__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/oauth/{provider}/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Oauth Callback */
+        get: operations["oauth_callback_auth_oauth__provider__callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/oauth/exchange": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exchange Oauth Code */
+        post: operations["exchange_oauth_code_auth_oauth_exchange_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -184,6 +252,23 @@ export interface paths {
         };
         /** Get Custom Voice User */
         get: operations["get_custom_voice_user_voices_me_custom__voice_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/voices/me/custom/{voice_id}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Custom Voice Audio */
+        get: operations["get_custom_voice_audio_voices_me_custom__voice_id__audio_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -301,7 +386,7 @@ export interface components {
             /** Event */
             event: string;
             /** User Id */
-            user_id: string;
+            user_id: string | null;
             /** Status */
             status: string;
             /** Ip Address */
@@ -317,6 +402,10 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** AuthMeResponse */
+        AuthMeResponse: {
+            user: components["schemas"]["CurrentUserResponse"];
         };
         /** Body_create_voice_voices__post */
         Body_create_voice_voices__post: {
@@ -345,6 +434,23 @@ export interface components {
             language: string;
             /** @default private */
             status: components["schemas"]["VisibilityStatus"];
+        };
+        /** CurrentUserResponse */
+        CurrentUserResponse: {
+            /** Id */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string | null;
+            /** Role */
+            role: string;
+            /** Tier */
+            tier: string;
+            /** Avatar */
+            avatar: string | null;
+            /** Email Notification */
+            email_notification: boolean;
         };
         /** GenerationRequest */
         GenerationRequest: {
@@ -385,6 +491,11 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** OAuthExchangeRequest */
+        OAuthExchangeRequest: {
+            /** Code */
+            code: string;
+        };
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
@@ -412,18 +523,6 @@ export interface components {
             /** Answer */
             answer: string;
         };
-        /** TokenResponse */
-        TokenResponse: {
-            /** Access Token */
-            access_token: string;
-            /** Refresh Token */
-            refresh_token: string;
-            /**
-             * Token Type
-             * @default bearer
-             */
-            token_type: string;
-        };
         /** UserResponse */
         UserResponse: {
             /** Id */
@@ -432,6 +531,14 @@ export interface components {
             email: string;
             /** Username */
             username: string | null;
+            /** Tier */
+            tier: string;
+            /** Onboard */
+            onboard: boolean;
+            /** Email Notification */
+            email_notification: boolean;
+            /** Auth Provider */
+            auth_provider: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -484,6 +591,18 @@ export interface components {
          * @enum {string}
          */
         VoiceVariant: "system" | "custom";
+        /** TokenResponse */
+        app__auth__schemas__auth__TokenResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Refresh Token */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -545,7 +664,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenResponse"];
+                    "application/json": components["schemas"]["app__auth__schemas__auth__TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -578,7 +697,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["TokenResponse"];
+                    "application/json": components["schemas"]["app__auth__schemas__auth__TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -593,6 +712,41 @@ export interface operations {
         };
     };
     logout_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    logout_all_auth_logout_all_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -629,11 +783,102 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: {
-                            [key: string]: string | null;
-                        };
-                    };
+                    "application/json": components["schemas"]["AuthMeResponse"];
+                };
+            };
+        };
+    };
+    start_oauth_auth_oauth__provider__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    oauth_callback_auth_oauth__provider__callback_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exchange_oauth_code_auth_oauth_exchange_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OAuthExchangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["app__auth__schemas__auth__TokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -828,6 +1073,35 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["VoiceResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_custom_voice_audio_voices_me_custom__voice_id__audio_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                voice_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

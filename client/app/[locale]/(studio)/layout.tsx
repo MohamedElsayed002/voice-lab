@@ -2,11 +2,6 @@ import { Suspense, type ReactNode } from "react";
 import { DashboardSidebar } from "@/components/shared/sidebar-content";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { cookies } from "next/headers";
-import { locale as getRootLocale } from "next/root-params";
-import { redirect } from "next/navigation";
-import { connection } from "next/server";
-import { getPathname } from "@/i18n/navigation";
-import { auth } from "@/lib/auth/server";
 import { UserDropdown } from "@/components/shared/user-dropdown";
 
 function StudioShell({
@@ -33,14 +28,6 @@ function StudioShell({
 }
 
 async function StudioLayoutContent({ children }: { children: ReactNode }) {
-    await connection();
-    const { data: session, error } = await auth.getSession();
-    if (error) throw error;
-    if (!session?.user) {
-        const locale = await getRootLocale();
-        redirect(getPathname({ locale, href: "/login" }));
-    }
-
     const cookieStore = await cookies();
     const defaultOpen = cookieStore.get("sidebar_state")?.value === "true";
 
