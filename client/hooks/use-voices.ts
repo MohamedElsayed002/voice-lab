@@ -4,10 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { parseAsString, parseAsStringEnum, useQueryStates } from "nuqs"
 import {
   createVoice,
+  generateTTS,
   getUserCustomVoice,
   getUserCustomVoices,
   getVoices,
 } from "@/actions/voices"
+import { toast } from "sonner"
 
 export const voicesQueryKey = ["voices"] as const
 export const userCustomVoicesQueryKey = ["voices", "mine", "custom"] as const
@@ -77,5 +79,22 @@ export function useCreateVoice() {
         queryClient.invalidateQueries({ queryKey: voicesQueryKey }),
         queryClient.invalidateQueries({ queryKey: userCustomVoicesQueryKey }),
       ]),
+  })
+}
+
+export function useGenerateTTS() {
+  return useMutation({
+    mutationKey: ["generate-tts"],
+    mutationFn: async ({voice_id, text}: {voice_id: string, text: string}) => {
+      const data = await generateTTS(voice_id, text)
+      return data
+    },
+    onSuccess: (data) => {
+      console.log(data)
+    },
+    onError: (error) => {
+      toast.error(error.message)
+    }
+
   })
 }

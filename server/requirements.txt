@@ -8,7 +8,7 @@ mangum
 boto3
 httpx
 openai>=1.0,<3.0
-sqlalchemy
+sqlalchemy[asyncio]
 asyncpg
 python-jose[cryptography]
 PyJWT[crypto]>=2.10,<3.0

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { AudioLines, PanelRightClose, PanelRightOpen } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { useVoices } from "@/hooks/use-voices"
+import { useGenerateTTS, useVoices } from "@/hooks/use-voices"
 import { Settings } from "./settings"
 import { History } from "./history"
 import { VoiceAvatar } from "../voices/voice-avatar"
@@ -23,6 +23,9 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
 
   const [settingsOpen, setSettingsOpen] = useState(true)
   const [content,setContent] = useState<"settings" | "history">("settings")
+
+
+  const {mutate: generateTextMutate, isPending: generateTextLoading } = useGenerateTTS()
 
   const form = useForm<TextToSpeechFormValues>({
     resolver: zodResolver(textToSpeechSchema),
@@ -41,7 +44,10 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
   const textTooLong = text.length > MAX_TEXT_LENGTH
 
   function handleGenerate(values: TextToSpeechFormValues) {
-    console.log(values.text, values.voiceId,values.stability)
+    generateTextMutate({
+      text: values.text,
+      voice_id: values.voiceId
+    })
   }
 
   return (
@@ -149,7 +155,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             <Button
               type="submit"
               size="lg"
-              disabled={!text.trim() || textTooLong || !selectedVoice || form.formState.isSubmitting}
+              disabled={!text.trim() || textTooLong || !selectedVoice || generateTextLoading }
               className="w-full gap-2 sm:w-auto"
             >
               <AudioLines aria-hidden="true" />

@@ -61,6 +61,31 @@ class VoiceService:
             raise NotFoundException("Voice", voice_id)
         return self._serialize_voice(voice)
 
+    async def get_voice_reference_audio(
+        self,
+        db: AsyncSession,
+        voice_id: str,
+        user_id: str,
+    ) -> tuple[Voice, bytes]:
+        result = await db.execute(
+            select(Voice).where(
+                Voice.id == voice_id,
+                or_(Voice.status == VisibilityStatus.PUBLIC, Voice.user_id == user_id),
+            )
+        )
+        voice = result.scalar_one_or_none()
+        if voice is None:
+            raise NotFoundException("Voice", voice_id)
+
+        audio_object = await self._get_voice_audio_object(voice)
+        body = audio_object["Body"]
+        try:
+            audio_bytes = await asyncio.to_thread(body.read)
+        finally:
+            await asyncio.to_thread(body.close)
+
+        return voice, audio_bytes
+
     async def get_public_voice_audio(self, db: AsyncSession, voice_id: str) -> dict[str, Any]:
         result = await db.execute(
             select(Voice).where(
@@ -101,7 +126,7 @@ class VoiceService:
                 Key=voice.audio_s3_object_key,
             )
         except (BotoCoreError, ClientError) as error:
-            logger.exception("Failed to retrieve audio for voice %s", voice_id)
+            logger.exception("Failed to retrieve audio for voice %s", voice.id)
             raise ServiceUnavailableException("Voice audio is temporarily unavailable") from error
 
         return audio_object
@@ -306,3 +331,7 @@ class VoiceService:
             ),
             "created_at": voice.created_at,
         }
+
+
+
+voice_service = VoiceService()

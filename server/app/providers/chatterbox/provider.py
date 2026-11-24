@@ -14,7 +14,15 @@ from app.providers.base import AudioResult, TTSCapabilities, TTSProvider
 class ChatterboxTTSProvider(TTSProvider):
     def __init__(self) -> None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = ChatterboxMultilingualTTS.from_pretrained(device=device)
+        try:
+            self.model = ChatterboxMultilingualTTS.from_pretrained(device=device)
+        except OSError as exc:
+            if exc.errno == 1455 or "paging file is too small" in str(exc).lower():
+                raise TTSProviderError(
+                    "Chatterbox could not load its model because Windows virtual "
+                    "memory is too low. Increase the paging file, then restart the API."
+                ) from exc
+            raise
 
     def capabilities(self) -> TTSCapabilities:
         return TTSCapabilities(

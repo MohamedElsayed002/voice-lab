@@ -8,7 +8,7 @@ export async function createVoice(formData: FormData) {
   const token = await getApiAccessToken()
   if (!token) throw new Error("Sign in to create a voice.")
 
-  const {data, error, response} = await api.POST("/voices/", {
+  const { data, error, response } = await api.POST("/voices/", {
     headers: { Authorization: `Bearer ${token}` },
     body: formData as unknown as components["schemas"]["Body_create_voice_voices__post"],
     cache: "no-store",
@@ -62,6 +62,37 @@ export async function getUserCustomVoice(voiceId: string) {
 
   if (error || !response.ok) {
     throw new Error(`Could not load custom voice (${response.status}).`)
+  }
+
+  return data
+}
+
+
+
+export async function generateTTS(voice_id: string, text: string) {
+  const token = await getApiAccessToken()
+  if (!token) throw new Error("Sign in to generate speech.")
+
+  const { data, error, response } = await api.POST("/generation", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: {
+      language: "en",
+      voice_id,
+      text,
+    },
+  })
+
+  if (!response.ok || error) {
+    const details =
+      error && typeof error === "object" && "message" in error &&
+      typeof error.message === "string"
+        ? error.message
+        : error
+          ? JSON.stringify(error)
+          : response.statusText
+    throw new Error(`Speech generation failed (${response.status}): ${details}`)
   }
 
   return data

@@ -15,6 +15,8 @@ from app.auth.routes.auth import router as auth_router
 from app.routes.text_generation import router as text_generation_router
 from app.routes.voices import router as voices_router
 
+from app.auth.services.auth_service import auth_service
+
 
 from app.db.session_2 import init_db
 
@@ -77,9 +79,14 @@ def _audio_url(generation_id: str) -> str:
 @app.post('/generation')
 async def create_generation(
     request: GenerationRequest,
-    service: GenerationService = Depends(get_generation_service)
+    service: GenerationService = Depends(get_generation_service),
+    user: dict[str, str | None] = Depends(auth_service.get_current_user)
 ) -> GenerationResponse:
-    record = await service.create_generation(request)
+    user_id = user.get("id")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="A valid authenticated user is required")
+
+    record = await service.create_generation(request, user_id)
     return GenerationResponse(
         id=record.id,
         status=record.status,

@@ -16,7 +16,7 @@ from app.core.storage.local_storage import StorageBackend
 from app.core.storage.local_storage import LocalStorage
 from app.services.generation import GenerationService
 # from app.services.p
-from app.services.voice_service import VoiceService 
+from app.services.voices_services import VoiceService, voice_service
 # from app.providers.base import LLM
 from app.providers.base import TTSProvider
 from app.providers.mock.provider import MockTTSProvider
@@ -58,13 +58,20 @@ def get_storage() -> StorageBackend:
 
 
 def get_voice_service() -> VoiceService:
-    return VoiceService()
+    return voice_service
 
 
 def get_generation_service(
         db: Session = Depends(test_get_db),
+        voice_db: AsyncSession = Depends(get_db),
         tts_provider: TTSProvider = Depends(get_tts_provider),
         storage: StorageBackend = Depends(get_storage),
         voice_service: VoiceService = Depends(get_voice_service)
 ) -> GenerationService:
-    return GenerationService(db=db, tts_provider=tts_provider,storage=storage,voice_service=voice_service)
+    return GenerationService(
+        db=db,
+        voice_db=voice_db,
+        tts_provider=tts_provider,
+        storage=storage,
+        voice_service=voice_service,
+    )

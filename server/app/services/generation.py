@@ -1,8 +1,11 @@
 
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session 
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
     GenerationNotFoundError,
@@ -10,12 +13,10 @@ from app.core.exceptions import (
     InvalidRequestError
 )
 
-from app.core.config import settings 
 from app.core.storage.local_storage import StorageBackend
 from app.models.generation import Generation 
 from app.schema.generation import GenerationRequest
-from app.services.generation import GenerationRequest 
-from app.services.voice_service import VoiceService
+from app.services.voices_services import VoiceService
 from app.providers.base import TTSProvider
 
 
@@ -23,29 +24,46 @@ class GenerationService:
     def __init__(
             self,
             db: Session,
+            voice_db: AsyncSession,
             tts_provider: TTSProvider,
             storage: StorageBackend,
-            voice_service: VoiceService
+            voice_service: VoiceService,
     ):
         self.db = db 
+        self.voice_db = voice_db
         self.tts_provider = tts_provider 
         self.storage = storage
         self.voice_service = voice_service
 
-    async def create_generation(self, request: GenerationRequest) -> Generation:
+    async def create_generation(
+        self,
+        request: GenerationRequest,
+        user_id: str,
+    ) -> Generation:
         self._validate(request)
 
-        # Resolving the voice happens before we touch the provider or 
-        # Storage, so a bad voice_id fails fast with a 404 instead of 
-        # burning a (potentially expensive) inference call first.
+        if not user_id:
+            raise InvalidRequestError("An authenticated user is required.")
 
-        reference_audio = self.voice_service.resolve_reference_audio(request.voice_id)
+        voice, reference_audio = await self.voice_service.get_voice_reference_audio(
+            self.voice_db,
+            request.voice_id,
+            user_id,
+        )
+        if not self.tts_provider.capabilities().supports_voice_cloning:
+            raise InvalidRequestError(
+                "The configured speech provider does not support stored voice references."
+            )
 
         record = Generation(
             type="tts",
             status="processing",
             provider=self.tts_provider.__class__.__name__,
-            input_metadata=request.model_dump()
+            input_metadata={
+                **request.model_dump(),
+                "user_id": user_id,
+                "voice_name": voice.name,
+            },
         )
 
         self.db.add(record)
@@ -53,11 +71,14 @@ class GenerationService:
         self.db.refresh(record)
 
         try:
-            result = await self.tts_provider.generate(
-                text=request.text,
-                voice_reference=reference_audio,
-                language=request.language
-            )
+            with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
+                reference_path = Path(temp_dir) / "reference.wav"
+                reference_path.write_bytes(reference_audio)
+                result = await self.tts_provider.generate(
+                    text=request.text,
+                    voice_reference=str(reference_path),
+                    language=request.language,
+                )
 
             storage_key = f"generations/{record.id}.{result.format}"
             self.storage.save_bytes(storage_key, result.data, content_type=f"audio/{result.format}")
