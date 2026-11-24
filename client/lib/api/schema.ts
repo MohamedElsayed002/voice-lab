@@ -311,6 +311,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/generation/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get User Generation History */
+        get: operations["get_user_generation_history_generation_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/generation": {
         parameters: {
             query?: never;
@@ -409,10 +426,7 @@ export interface components {
         };
         /** Body_create_voice_voices__post */
         Body_create_voice_voices__post: {
-            /**
-             * Audio
-             * Format: binary
-             */
+            /** Audio */
             audio: string;
             /** Avatar */
             avatar?: string | null;
@@ -452,6 +466,28 @@ export interface components {
             /** Email Notification */
             email_notification: boolean;
         };
+        /** GenerationHistoryItem */
+        GenerationHistoryItem: {
+            /** Id */
+            id: string;
+            /** Voice Id */
+            voice_id: string;
+            /** Voice Name */
+            voice_name: string;
+            /** Text */
+            text: string;
+            /** Audio Url */
+            audio_url: string | null;
+            /** Temperature */
+            temperature: number;
+            /** Top P */
+            top_p: number;
+            /** Top K */
+            top_k: number;
+            /** Repetition Penalty */
+            repetition_penalty: number;
+            status: components["schemas"]["VisibilityStatus"];
+        };
         /** GenerationRequest */
         GenerationRequest: {
             /** Text */
@@ -466,15 +502,15 @@ export interface components {
              * @default en
              */
             language: string;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         /** GenerationResponse */
         GenerationResponse: {
-            /** Id */
-            id: string;
-            /** Status */
-            status: string;
             /** Audio Url */
-            audio_url?: string | null;
+            audio_url: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -523,6 +559,18 @@ export interface components {
             /** Answer */
             answer: string;
         };
+        /** TokenResponse */
+        TokenResponse: {
+            /** Access Token */
+            access_token: string;
+            /** Refresh Token */
+            refresh_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+        };
         /** UserResponse */
         UserResponse: {
             /** Id */
@@ -548,6 +596,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * VisibilityStatus
@@ -591,18 +643,6 @@ export interface components {
          * @enum {string}
          */
         VoiceVariant: "system" | "custom";
-        /** TokenResponse */
-        app__auth__schemas__auth__TokenResponse: {
-            /** Access Token */
-            access_token: string;
-            /** Refresh Token */
-            refresh_token: string;
-            /**
-             * Token Type
-             * @default bearer
-             */
-            token_type: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -664,7 +704,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__auth__schemas__auth__TokenResponse"];
+                    "application/json": components["schemas"]["TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -697,7 +737,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__auth__schemas__auth__TokenResponse"];
+                    "application/json": components["schemas"]["TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -869,7 +909,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__auth__schemas__auth__TokenResponse"];
+                    "application/json": components["schemas"]["TokenResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1170,6 +1210,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_generation_history_generation_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationHistoryItem"][];
                 };
             };
         };

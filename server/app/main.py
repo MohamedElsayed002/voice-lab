@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.database import engine
 from app.exceptions.handlers import register_exception_handlers
 from app.routes.audit_logs import router as audit_logs_router
+from app.routes.generation import router as generation_router
 # from app.routes.auth import router as auth_router
 from app.auth.routes.auth import router as auth_router
 from app.routes.text_generation import router as text_generation_router
@@ -18,7 +19,7 @@ from app.routes.voices import router as voices_router
 from app.auth.services.auth_service import auth_service
 
 
-from app.db.session_2 import init_db
+# from app.db.session_2 import init_db
 
 from app.schema.generation import GenerationRequest, GenerationResponse
 from app.services.generation import GenerationService
@@ -30,7 +31,7 @@ from app.auth.routes.oauth import router as oauth_router
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     try:
-        init_db()
+        # init_db()
         yield
     finally:
         try:
@@ -69,6 +70,7 @@ app.include_router(oauth_router)
 app.include_router(text_generation_router)
 app.include_router(audit_logs_router)
 app.include_router(voices_router)
+app.include_router(generation_router)
 register_exception_handlers(app)
 
 
@@ -76,22 +78,17 @@ def _audio_url(generation_id: str) -> str:
     return f"/api/v1/generations/{generation_id}/audio"
 
 
-@app.post('/generation')
+@app.post('/generation', response_model=GenerationResponse)
 async def create_generation(
     request: GenerationRequest,
     service: GenerationService = Depends(get_generation_service),
     user: dict[str, str | None] = Depends(auth_service.get_current_user)
-) -> GenerationResponse:
+):
     user_id = user.get("id")
     if user_id is None:
         raise HTTPException(status_code=401, detail="A valid authenticated user is required")
 
-    record = await service.create_generation(request, user_id)
-    return GenerationResponse(
-        id=record.id,
-        status=record.status,
-        audio_url=_audio_url(record.id) if record.status == "completed" else None,
-    )
+    return await service.create_generation(request, user_id)
 
 @app.get("/health", tags=["health"])
 def health_check() -> dict[str, str]:

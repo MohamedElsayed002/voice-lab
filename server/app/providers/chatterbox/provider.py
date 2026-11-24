@@ -2,10 +2,14 @@
 import asyncio
 import io
 import wave
+from typing import Any
 
 import numpy as np
 import torch
 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+from chatterbox.tts_turbo import ChatterboxTurboTTS
+
+# ChatterboxTurboTTS.from_local(device="device")
 
 from app.core.exceptions import TTSProviderError, UnsupportedLanguageError
 from app.providers.base import AudioResult, TTSCapabilities, TTSProvider
@@ -15,6 +19,8 @@ class ChatterboxTTSProvider(TTSProvider):
     def __init__(self) -> None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
         try:
+            # chatterbox-tts 0.1.7 loads its configured multilingual model
+            # through the device argument; it does not accept a t3_model kwarg.
             self.model = ChatterboxMultilingualTTS.from_pretrained(device=device)
         except OSError as exc:
             if exc.errno == 1455 or "paging file is too small" in str(exc).lower():
@@ -38,13 +44,15 @@ class ChatterboxTTSProvider(TTSProvider):
         text: str,
         voice_reference: str | None,
         language: str,
+        metadata: dict[str, Any] | None = None
     ) -> AudioResult:
-        kwargs = {"language_id": language}
+        kwargs: dict[str, Any] = dict(metadata or {})
+        kwargs["language_id"] = language
 
         if voice_reference is not None:
             kwargs["audio_prompt_path"] = voice_reference
 
-        waveform = self.model.generate(text, **kwargs)
+        waveform = self.model.generate(text,**kwargs,)
         sample_rate = self.model.sr
         samples = waveform.detach().to(device="cpu", dtype=torch.float32).squeeze()
         if samples.ndim != 1:
@@ -71,6 +79,7 @@ class ChatterboxTTSProvider(TTSProvider):
         text: str,
         voice_reference: str | None = None,
         language: str | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> AudioResult:
         supported_languages = self.capabilities().supported_languages
         language = language.lower() if language is not None else "en"
@@ -84,4 +93,5 @@ class ChatterboxTTSProvider(TTSProvider):
             text,
             voice_reference,
             language,
+            metadata
         )

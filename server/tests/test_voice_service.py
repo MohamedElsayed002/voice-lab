@@ -266,6 +266,38 @@ async def test_get_custom_voice_audio_requires_owned_custom_voice() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_voice_reference_audio_returns_voice_and_s3_bytes() -> None:
+    voice = Voice(
+        id="voice-1",
+        user_id="user-1",
+        name="Warm narrator",
+        description="A clear, warm voice.",
+        category=VoiceCategory.AUDIOBOOK,
+        language="en",
+        variant=VoiceVariant.CUSTOM,
+        status=VisibilityStatus.PRIVATE,
+        audio_s3_object_key="custom/user-1/voice-1/audio.wav",
+        avatar_s3_object_key=None,
+        reference_text="A sample sentence.",
+        created_at=datetime.now(timezone.utc),
+    )
+    s3_client = FakeS3Client()
+    s3_client.objects[voice.audio_s3_object_key] = (b"reference audio", "audio/wav")
+    db = FakeAsyncSession(voice_results=[voice])
+    service = VoiceService(s3_client=s3_client)
+
+    resolved_voice, audio_bytes = await service.get_voice_reference_audio(
+        db,
+        "voice-1",
+        "user-1",
+    )
+
+    assert resolved_voice is voice
+    assert audio_bytes == b"reference audio"
+    assert db.executed_statement is not None
+
+
+@pytest.mark.asyncio
 async def test_create_voice_stores_audio_avatar_and_metadata() -> None:
     s3_client = FakeS3Client()
     db = FakeAsyncSession()

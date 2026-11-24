@@ -7,10 +7,11 @@ import {
   generateTTS,
   getUserCustomVoice,
   getUserCustomVoices,
+  getUserGenerationHistory,
   getVoices,
 } from "@/actions/voices"
 import { toast } from "sonner"
-
+import { VoiceMetadata}  from "@/types/voices"
 export const voicesQueryKey = ["voices"] as const
 export const userCustomVoicesQueryKey = ["voices", "mine", "custom"] as const
 export const userCustomVoiceQueryKey = (voiceId: string) =>
@@ -82,19 +83,31 @@ export function useCreateVoice() {
   })
 }
 
+
+
+
 export function useGenerateTTS() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationKey: ["generate-tts"],
-    mutationFn: async ({voice_id, text}: {voice_id: string, text: string}) => {
-      const data = await generateTTS(voice_id, text)
+    mutationFn: async ({voice_id, text, metadata}: {voice_id: string, text: string, metadata: VoiceMetadata}) => {
+      const data = await generateTTS(voice_id, text,metadata)
       return data
     },
-    onSuccess: (data) => {
-      console.log(data)
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-history"] }),
     onError: (error) => {
       toast.error(error.message)
     }
 
+  })
+}
+
+
+export function useGetUserHistory() {
+  return useQuery({
+    queryKey: ["user-history"],
+    queryFn: getUserGenerationHistory,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   })
 }

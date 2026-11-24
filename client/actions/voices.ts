@@ -3,6 +3,7 @@
 import { getApiAccessToken } from "@/lib/auth/session"
 import { api } from "@/lib/api/client"
 import type { components } from "@/lib/api/schema"
+import { VoiceMetadata } from "@/types/voices"
 
 export async function createVoice(formData: FormData) {
   const token = await getApiAccessToken()
@@ -69,11 +70,11 @@ export async function getUserCustomVoice(voiceId: string) {
 
 
 
-export async function generateTTS(voice_id: string, text: string) {
+export async function generateTTS(voice_id: string, text: string, metadata: VoiceMetadata) {
   const token = await getApiAccessToken()
   if (!token) throw new Error("Sign in to generate speech.")
-
-  const { data, error, response } = await api.POST("/generation", {
+  console.log(voice_id, text,metadata)
+  const { data, response, error } = await api.POST("/generation", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -81,8 +82,10 @@ export async function generateTTS(voice_id: string, text: string) {
       language: "en",
       voice_id,
       text,
+      metadata
     },
   })
+
 
   if (!response.ok || error) {
     const details =
@@ -96,4 +99,20 @@ export async function generateTTS(voice_id: string, text: string) {
   }
 
   return data
+}
+
+export async function getUserGenerationHistory() {
+  const token = await getApiAccessToken()
+  if (!token) throw new Error("Sign in to view your generation history.")
+
+  const { data, error, response } = await api.GET("/generation/history", {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  })
+
+  if (error || !response.ok) {
+    throw new Error(`Could not load generation history (${response.status}).`)
+  }
+
+  return data ?? []
 }

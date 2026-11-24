@@ -121,30 +121,188 @@ export const Settings = ({
 
       <Controller
         control={form.control}
-        name="stability"
+        name="exaggeration"
         render={({ field }) => (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <label htmlFor="voice-stability" className="text-sm font-medium">
-                Stability
+              <label htmlFor="voice-exaggeration" className="text-sm font-medium">
+                Exaggeration
               </label>
               <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold tabular-nums">
-                {field.value} / 10
+                {field.value} / 2
               </span>
             </div>
             <Slider
-              id="voice-stability"
-              aria-label="Voice stability"
-              min={1}
-              max={10}
-              step={1}
+              id="voice-exaggeration"
+              aria-label="Voice Exaggeration"
+              min={0.25}
+              max={2}
+              step={0.10}
               value={[field.value]}
               onValueChange={(value) => field.onChange(Array.isArray(value) ? value[0] ?? 8 : value)}
               className="py-2"
             />
-            <div className="flex justify-between text-[11px] text-muted-foreground">
-              <span>More expressive</span>
-              <span>More consistent</span>
+            <div className="flex flex-col text-[11px] text-muted-foreground">
+              <span>Usually controls expressiveness/emotion in generated speech</span>
+              <span>Higher values can sound more dramatic.</span>
+            </div>
+          </div>
+        )}
+      />
+
+
+      <Controller
+        control={form.control}
+        name="cfg_weight"
+        render={({ field }) => (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="voice-cfg_weight" className="text-sm font-medium">
+                Cfg weight
+              </label>
+              <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold tabular-nums">
+                {field.value} / 1.0
+              </span>
+            </div>
+            <Slider
+              id="voice-cfg_weight"
+              aria-label="Voice cfg weight"
+              min={0.0}
+              max={1.0}
+              step={0.10}
+              value={[field.value]}
+              onValueChange={(value) => field.onChange(Array.isArray(value) ? value[0] ?? 8 : value)}
+              className="py-2"
+            />
+            <div className="flex flex-col text-[11px] text-muted-foreground">
+              <span>Higher values force the model to follow the prompt more strictly.</span>
+              <span>Lower values allow more variation.</span>
+            </div>
+          </div>
+        )}
+      />
+
+
+      <Controller
+        control={form.control}
+        name="temperature"
+        render={({ field }) => (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="voice-temperature" className="text-sm font-medium">
+                Temperature
+              </label>
+              <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold tabular-nums">
+                {field.value} / 5.0
+              </span>
+            </div>
+            <Slider
+              id="voice-temperature"
+              aria-label="Voice temperature"
+              min={0.05}
+              max={5.0}
+              step={0.10}
+              value={[field.value]}
+              onValueChange={(value) => field.onChange(Array.isArray(value) ? value[0] ?? 8 : value)}
+              className="py-2"
+            />
+            <div className="flex flex-col text-[11px] text-muted-foreground">
+              <span>Lower (0.2) → more deterministic.</span>
+              <span>Higher (1.2) → more creative/random.</span>
+            </div>
+          </div>
+        )}
+      />
+
+      <Controller
+        control={form.control}
+        name="repetition_penalty"
+        render={({ field }) => (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="voice-repetition_penalty" className="text-sm font-medium">
+                Repetition penalty
+              </label>
+              <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold tabular-nums">
+                {field.value} / 2.0
+              </span>
+            </div>
+            <Slider
+              id="voice-repetition_penalty"
+              aria-label="Voice repetition_penalty"
+              min={1.0}
+              max={2.0}
+              step={0.10}
+              value={[field.value]}
+              onValueChange={(value) => field.onChange(Array.isArray(value) ? value[0] ?? 8 : value)}
+              className="py-2"
+            />
+            <div className="flex flex-col text-[11px] text-muted-foreground">
+              <span>1.0 = no penalty.</span>
+              <span>&gt;1.0 reduces repetition.</span>
+              <span>Very high values can make speech/text unnatural.</span>
+            </div>
+          </div>
+        )}
+      />
+
+      <Controller
+        control={form.control}
+        name="min_p"
+        render={({ field }) => (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="voice-min-p" className="text-sm font-medium">
+                min p
+              </label>
+              <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold tabular-nums">
+                {field.value} / 1.0
+              </span>
+            </div>
+            <Slider
+              id="voice-min-p"
+              aria-label="Voice min p"
+              min={0.0}
+              max={1.0}
+              step={0.05}
+              value={[field.value]}
+              onValueChange={(value) => field.onChange(Array.isArray(value) ? value[0] ?? 8 : value)}
+              className="py-2"
+            />
+            <div className="flex flex-col text-[11px] text-muted-foreground">
+              <span>Filters out tokens with extremely low probability.</span>
+              <span>Higher values make output more focused.</span>
+            </div>
+          </div>
+        )}
+      />
+
+      <Controller
+        control={form.control}
+        name="top_p"
+        render={({ field }) => (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="voice-top_p" className="text-sm font-medium">
+                top p
+              </label>
+              <span className="rounded-md bg-muted px-2 py-1 text-xs font-semibold tabular-nums">
+                {field.value} / 1.0
+              </span>
+            </div>
+            <Slider
+              id="voice-top_p"
+              aria-label="Voice top p"
+              min={0.0}
+              max={1.0}
+              step={0.10}
+              value={[field.value]}
+              onValueChange={(value) => field.onChange(Array.isArray(value) ? value[0] ?? 8 : value)}
+              className="py-2"
+            />
+            <div className="flex flex-col text-[11px] text-muted-foreground">
+              <span>1.0 = use all probabilities.</span>
+              <span>0.9 = sample from the most likely 90% of probability mass.</span>
             </div>
           </div>
         )}

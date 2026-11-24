@@ -197,17 +197,31 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError):
         """
-            Handles SQLAlchemy DB integrity errors (e.g., UNIQUE constraint violation).
-            Instead of leaking raw SQL raw SQL errors to the client, we return a clean 409
+            Only unique-key violations represent a duplicate resource. Other integrity
+            errors (for example, a missing foreign-key target) are not conflicts.
         """
 
         logger.warning(f"DB IntegrityError on {request.url.path}: {exc.orig}")
 
+        # PostgreSQL reports SQLSTATE 23505 for unique violations. SQLite reports
+        # these through its driver message. Avoid presenting FK/not-null failures
+        # as "A record with this data already exists".
+        sqlstate = getattr(exc.orig, "sqlstate", None) or getattr(exc.orig, "pgcode", None)
+        is_unique_violation = sqlstate == "23505" or "unique constraint failed" in str(exc.orig).lower()
+
+        if is_unique_violation:
+            return _error_response(
+                request,
+                status_code=status.HTTP_409_CONFLICT,
+                message="A record with this data already exists",
+                error_code="DUPLICATE_ENTRY",
+            )
+
         return _error_response(
             request,
-            status_code=status.HTTP_409_CONFLICT,
-            message="A record with this data already exists",
-            error_code="DUPLICATE_ENTRY"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            message="The record violates a database constraint",
+            error_code="INTEGRITY_ERROR",
         )    
     
     @app.exception_handler(Exception)

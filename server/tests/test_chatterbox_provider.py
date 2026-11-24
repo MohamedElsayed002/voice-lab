@@ -6,6 +6,7 @@ import pytest
 import torch
 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
 
+from app.core.exceptions import TTSProviderError
 from app.providers.chatterbox.provider import ChatterboxTTSProvider
 
 
@@ -18,6 +19,22 @@ class FakeChatterboxModel:
     def generate(self, text: str, **kwargs: str) -> torch.Tensor:
         self.calls.append((text, kwargs))
         return torch.tensor([[0.0, 0.5, -0.5]], dtype=torch.float32)
+
+
+def test_provider_explains_windows_pagefile_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_to_load(*, device: str) -> FakeChatterboxModel:
+        raise OSError(1455, "The paging file is too small for this operation.")
+
+    monkeypatch.setattr(
+        ChatterboxMultilingualTTS,
+        "from_pretrained",
+        staticmethod(fail_to_load),
+    )
+
+    with pytest.raises(TTSProviderError, match="Windows virtual memory"):
+        ChatterboxTTSProvider()
 
 
 def test_provider_uses_cpu_when_cuda_is_unavailable(
@@ -73,3 +90,39 @@ def test_provider_supports_arabic_and_passes_language_to_model() -> None:
         assert wav.getsampwidth() == 2
         assert wav.getframerate() == 16_000
         assert wav.getnframes() == 3
+
+
+def test_provider_passes_optional_metadata_to_model() -> None:
+    model = FakeChatterboxModel()
+    provider = ChatterboxTTSProvider.__new__(ChatterboxTTSProvider)
+    provider.model = model
+
+    asyncio.run(
+        provider.generate(
+            "Hello",
+            language="en",
+            metadata={
+                "exaggeration": 0.5,
+                "cfg_weight": 0.5,
+                "temperature": 0.8,
+                "repetition_penalty": 1.2,
+                "min_p": 0.05,
+                "top_p": 1,
+            },
+        )
+    )
+
+    assert model.calls == [
+        (
+            "Hello",
+            {
+                "language_id": "en",
+                "exaggeration": 0.5,
+                "cfg_weight": 0.5,
+                "temperature": 0.8,
+                "repetition_penalty": 1.2,
+                "min_p": 0.05,
+                "top_p": 1,
+            },
+        )
+    ]

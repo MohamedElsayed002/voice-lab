@@ -4,7 +4,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import (
@@ -14,32 +13,41 @@ from app.core.exceptions import (
 )
 
 from app.core.storage.local_storage import StorageBackend
-from app.models.generation import Generation 
+from app.models.generations import Generation 
 from app.schema.generation import GenerationRequest
 from app.services.voices_services import VoiceService
 from app.providers.base import TTSProvider
+from app.schema.visibility import VisibilityStatus
 
+from typing import Any
+from app.core.storage import create_s3_client
+import asyncio
+from app.core.config import settings
+from botocore.exceptions import BotoCoreError, ClientError
+from app.exceptions.handlers import ServiceUnavailableException
 
 class GenerationService:
     def __init__(
             self,
-            db: Session,
+            db: AsyncSession,
             voice_db: AsyncSession,
             tts_provider: TTSProvider,
             storage: StorageBackend,
             voice_service: VoiceService,
+            s3_client: Any | None = None
     ):
         self.db = db 
         self.voice_db = voice_db
         self.tts_provider = tts_provider 
         self.storage = storage
         self.voice_service = voice_service
+        self.s3_client = s3_client or create_s3_client()
 
     async def create_generation(
         self,
         request: GenerationRequest,
         user_id: str,
-    ) -> Generation:
+    ):
         self._validate(request)
 
         if not user_id:
@@ -54,21 +62,26 @@ class GenerationService:
             raise InvalidRequestError(
                 "The configured speech provider does not support stored voice references."
             )
-
+        
         record = Generation(
-            type="tts",
-            status="processing",
-            provider=self.tts_provider.__class__.__name__,
-            input_metadata={
-                **request.model_dump(),
-                "user_id": user_id,
-                "voice_name": voice.name,
-            },
+            user_id=user_id,
+            voice_id=request.voice_id,
+            text=request.text,
+            voice_name=voice.name,
+            # Older local SQLite databases may still enforce NOT NULL here
+            # until they are rebuilt/migrated. The final key is written below.
+            s3_object_key="",
+            temperature=request.metadata.get("temperature", 0.8),
+            top_p=request.metadata.get("top_p", 0.95),
+            top_k=request.metadata.get("top_k", 1000),
+            repetition_penalty=request.metadata.get("repetition_penalty", 1.2),
+            status=VisibilityStatus.PRIVATE,
+            # provider=self.tts_provider.__class__.__name__
         )
 
         self.db.add(record)
-        self.db.commit()
-        self.db.refresh(record)
+        await self.db.commit()
+        await self.db.refresh(record)
 
         try:
             with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
@@ -78,39 +91,53 @@ class GenerationService:
                     text=request.text,
                     voice_reference=str(reference_path),
                     language=request.language,
+                    metadata=request.metadata
                 )
+    
+            storage_key = f"generations/{user_id}/{record.id}.{result.format}"
+            # self.storage.save_bytes(storage_key, result.data, content_type=f"audio/{result.format}")
 
-            storage_key = f"generations/{record.id}.{result.format}"
-            self.storage.save_bytes(storage_key, result.data, content_type=f"audio/{result.format}")
+            await asyncio.to_thread(
+                self.s3_client.put_object,
+                Bucket=settings.BUCKET_NAME,
+                Key=storage_key,
+                Body=result.data,
+                ContentType=result.format
+            )
 
-            record.status = "completed"
-            record.storage_key = storage_key
-            record.completed_at = datetime.now(timezone.utc)
+
+
+            # `status` is the public/private visibility enum, not generation
+            # progress. A stored object key indicates that audio is available.
+            record.s3_object_key = storage_key
+            # record.completed_at = datetime.now(timezone.utc)
 
         except ProviderError as exc:
-            record.status = "failed"
-            record.error_message = str(exc)
             raise
+        except (BotoCoreError, ClientError) as error:
+            await self.db.rollback()
+            raise ServiceUnavailableException("Voice storage is temporarily unavailable ") from error
         finally:
-            self.db.commit()
-            self.db.refresh(record)
+            await self.db.commit()
+            await self.db.refresh(record)
 
-        return record
+        return self._serialize_audio(record)
 
-    def get_generation(self, generation_id: str) -> Generation:
-        record = self.db.get(Generation, generation_id)
+
+    async def get_generation(self, generation_id: str) -> Generation:
+        record = await self.db.get(Generation, generation_id)
 
         if record is None:
             raise GenerationRequest(f"No generation with id {generation_id}")
 
         return record
 
-    def get_audio_bytes(self, generation_id: str) -> bytes:
-        record = self.get_generation(generation_id)
+    async def get_audio_bytes(self, generation_id: str) -> bytes:
+        record = await self.get_generation(generation_id)
 
-        if record.status != "completed" or not record.storage_key:
+        if not record.s3_object_key:
             raise GenerationNotFoundError(f"Generation '{generation_id}' has no audio available")
-        return self.storage.load_bytes(record.storage_key)
+        return self.storage.load_bytes(record.s3_object_key)
 
     
     @staticmethod
@@ -122,3 +149,12 @@ class GenerationService:
             raise InvalidRequestError(
                 f"text exceeds max length of 2000 characters"
             )
+
+    def _serialize_audio(self, voice):
+        return {
+            "audio_url": self.s3_client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": settings.BUCKET_NAME, "Key": voice.s3_object_key},
+                ExpiresIn=60*60,
+            ),
+        }

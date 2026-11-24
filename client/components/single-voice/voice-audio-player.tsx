@@ -14,7 +14,15 @@ function formatTime(seconds: number) {
   return `${minutes}:${remainder}`
 }
 
-export default function VoiceAudioPlayer({ voice }: { voice: Voice }) {
+type VoiceAudioPlayerProps = {
+  voice: Voice
+  audioUrl?: string
+}
+
+export default function VoiceAudioPlayer({
+  voice,
+  audioUrl = `/api/voices/${encodeURIComponent(voice.id)}/audio`,
+}: VoiceAudioPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const wavesurferRef = useRef<WaveSurfer | null>(null)
   const [playing, setPlaying] = useState(false)
@@ -35,7 +43,7 @@ export default function VoiceAudioPlayer({ voice }: { voice: Voice }) {
 
     const wavesurfer = WaveSurfer.create({
       container: containerRef.current,
-      url: `/api/voices/${encodeURIComponent(voice.id)}/audio`,
+      url: audioUrl,
       height: 96,
       barWidth: 3,
       barGap: 2,
@@ -43,7 +51,7 @@ export default function VoiceAudioPlayer({ voice }: { voice: Voice }) {
       normalize: true,
       cursorWidth: 2,
       cursorColor: "#22d3ee",
-      waveColor: "#8b5cf6",
+      waveColor: "#f97316",
       progressColor: "#22d3ee",
       dragToSeek: true,
     })
@@ -71,7 +79,7 @@ export default function VoiceAudioPlayer({ voice }: { voice: Voice }) {
       wavesurfer.destroy()
       wavesurferRef.current = null
     }
-  }, [reloadVersion, voice.id, voice.name])
+  }, [audioUrl, reloadVersion, voice.id, voice.name])
 
   useEffect(() => {
     wavesurferRef.current?.setVolume(volume)
@@ -111,7 +119,7 @@ export default function VoiceAudioPlayer({ voice }: { voice: Voice }) {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button
             aria-label={playing ? "Pause voice sample" : "Play voice sample"}
-            className="size-10 rounded-full bg-violet-600 text-white hover:bg-violet-500"
+            className="size-10 rounded-full bg-primary text-white hover:bg-primary/80"
             disabled={loading || Boolean(error)}
             onClick={togglePlayback}
             size="icon"

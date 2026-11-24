@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum as SAEnum, ForeignKey, Index, String, Text, UniqueConstraint, and_
+from sqlalchemy import Enum as SAEnum, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
 
 from app.db.base import Base, generate_random_uuid
@@ -65,7 +65,4 @@ class Voice(Base):
 def _generation_voice_join():
     from app.models.generations import Generation
 
-    return and_(
-        Voice.user_id == Generation.user_id,
-        Voice.id == foreign(Generation.voice_id),
-    )
+    return Voice.id == foreign(Generation.voice_id)

@@ -1,6 +1,7 @@
 
 from abc import ABC, abstractmethod 
 from dataclasses import dataclass 
+from typing import Any
 
 @dataclass(frozen=True)
 class AudioResult:
@@ -28,7 +29,8 @@ class TTSProvider(ABC):
         self, 
         text: str, 
         voice_reference: str | None = None,
-        language: str | None = None
+        language: str | None = None,
+        metadata: dict[str, Any] | None = None
     ) -> AudioResult:
         """ 
             Synthesize `text` into audio.

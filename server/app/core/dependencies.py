@@ -4,12 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import session_factory
 
-# Temp
-from app.db.session_2 import get_db as test_get_db
-
 from functools import lru_cache
 from fastapi import Depends 
-from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.storage.local_storage import StorageBackend
@@ -62,7 +58,7 @@ def get_voice_service() -> VoiceService:
 
 
 def get_generation_service(
-        db: Session = Depends(test_get_db),
+        db: AsyncSession = Depends(get_db),
         voice_db: AsyncSession = Depends(get_db),
         tts_provider: TTSProvider = Depends(get_tts_provider),
         storage: StorageBackend = Depends(get_storage),

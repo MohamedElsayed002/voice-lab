@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Enum as SAEnum, Float, ForeignKey, ForeignKeyConstraint, Index, Integer, String, Text, and_
+from sqlalchemy import Enum as SAEnum, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, foreign, mapped_column, relationship
 
 from app.db.base import Base, generate_random_uuid
@@ -14,12 +14,6 @@ if TYPE_CHECKING:
 class Generation(Base):
     __tablename__ = "generations"
     __table_args__ = (
-        ForeignKeyConstraint(
-            ["user_id", "voice_id"],
-            ["voices.user_id", "voices.id"],
-            name="fk_generations_user_voice",
-            ondelete="CASCADE",
-        ),
         Index("ix_generations_user_id", "user_id"),
         Index("ix_generations_voice_id", "voice_id"),
         Index("ix_generations_status", "status"),
@@ -30,11 +24,13 @@ class Generation(Base):
         String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     voice_id: Mapped[str] = mapped_column(
-        String(36), nullable=False
+        String(36),
+        ForeignKey("voices.id", name="fk_generations_voice_id_voices", ondelete="CASCADE"),
+        nullable=False,
     )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     voice_name: Mapped[str] = mapped_column(String(256), nullable=False)
-    s3_object_key: Mapped[str] = mapped_column(String(1024), nullable=False)
+    s3_object_key: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     temperature: Mapped[float] = mapped_column(Float, nullable=False)
     top_p: Mapped[float] = mapped_column(Float, nullable=False)
     top_k: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -61,7 +57,4 @@ class Generation(Base):
 def _generation_voice_join():
     from app.models.voice import Voice
 
-    return and_(
-        Voice.user_id == Generation.user_id,
-        Voice.id == foreign(Generation.voice_id),
-    )
+    return Voice.id == foreign(Generation.voice_id)

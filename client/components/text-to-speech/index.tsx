@@ -14,6 +14,7 @@ import { Textarea } from "../ui/textarea"
 import { Label } from "../ui/label"
 import { textToSpeechSchema, type TextToSpeechFormValues } from "./form-schema"
 import { textSuggestions } from "./constants"
+import VoiceAudioPlayer from "../single-voice/voice-audio-player"
 
 const MAX_TEXT_LENGTH = 2000
 
@@ -22,10 +23,12 @@ const MAX_TEXT_LENGTH = 2000
 export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
 
   const [settingsOpen, setSettingsOpen] = useState(true)
-  const [content,setContent] = useState<"settings" | "history">("settings")
+  const [content, setContent] = useState<"settings" | "history">("settings")
+
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
 
 
-  const {mutate: generateTextMutate, isPending: generateTextLoading } = useGenerateTTS()
+  const { mutate: generateTextMutate, isPending: generateTextLoading } = useGenerateTTS()
 
   const form = useForm<TextToSpeechFormValues>({
     resolver: zodResolver(textToSpeechSchema),
@@ -33,10 +36,15 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
     defaultValues: {
       text: "",
       voiceId: voiceId ?? "",
-      stability: 8,
+      exaggeration: 0.5,
+      cfg_weight: 0.5,
+      temperature: 0.8,
+      repetition_penalty: 1.2,
+      min_p: 0.05,
+      top_p: 1.0
     },
   })
-  
+
   const text = useWatch({ control: form.control, name: "text" })
   const selectedVoiceId = useWatch({ control: form.control, name: "voiceId" })
   const voicesQuery = useVoices()
@@ -44,9 +52,24 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
   const textTooLong = text.length > MAX_TEXT_LENGTH
 
   function handleGenerate(values: TextToSpeechFormValues) {
-    generateTextMutate({
+
+    const payload = {
       text: values.text,
-      voice_id: values.voiceId
+      voice_id: values.voiceId,
+      metadata: {
+        "exaggeration": values.exaggeration,
+        "min_p": values.min_p,
+        "top_p": values.top_p,
+        "cfg_weight": values.cfg_weight,
+        "temperature": values.temperature,
+        "repetition_penalty": values.repetition_penalty
+      }
+    }
+
+    generateTextMutate(payload, {
+      onSuccess: (data) => {
+        setAudioUrl(data.audio_url)
+      }
     })
   }
 
@@ -61,7 +84,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             <h1 className="text-2xl font-semibold">Text to speech</h1>
             {selectedVoice && (
               <div className="mt-3 flex min-w-0 items-center gap-3">
-                <VoiceAvatar seed={selectedVoice.id} name={selectedVoice.name} className="size-12"/>
+                <VoiceAvatar seed={selectedVoice.id} name={selectedVoice.name} className="size-12" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{selectedVoice.name}</p>
                   <p className="truncate text-xs text-muted-foreground">
@@ -100,11 +123,10 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             placeholder="Write or paste the words you want your voice to say..."
             aria-describedby="speech-text-help speech-text-error"
             aria-invalid={textTooLong || Boolean(form.formState.errors.text)}
-            className={`field-sizing-fixed h-[min(40vh,560px)] resize-none min-h-[320px]  rounded-xl p-4 text-base leading-7 placeholder:text-muted-foreground/70 ${
-              textTooLong
-                ? "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
-                : ""
-            }`}
+            className={`field-sizing-fixed h-[min(40vh,560px)] resize-none min-h-[320px]  rounded-xl p-4 text-base leading-7 placeholder:text-muted-foreground/70 ${textTooLong
+              ? "border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
+              : ""
+              }`}
             {...form.register("text")}
           />
           <div className="mt-2 flex min-h-5 items-start justify-between gap-3">
@@ -155,7 +177,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             <Button
               type="submit"
               size="lg"
-              disabled={!text.trim() || textTooLong || !selectedVoice || generateTextLoading }
+              disabled={!text.trim() || textTooLong || !selectedVoice || generateTextLoading}
               className="w-full gap-2 sm:w-auto"
             >
               <AudioLines aria-hidden="true" />
@@ -163,14 +185,22 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             </Button>
           </div>
         </section>
+
+        <section className="w-full my-5">
+          {selectedVoice && audioUrl && (
+            <VoiceAudioPlayer
+              voice={selectedVoice}
+              audioUrl={audioUrl ?? undefined}
+            />
+          )}
+        </section>
       </main>
 
       <aside
         aria-label="Voice settings"
         aria-hidden={!settingsOpen}
-        className={`shrink-0 overflow-hidden border-l bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear ${
-        settingsOpen ? "w-2/3 md:w-1/3" : "w-0 border-l-0"
-        }`}
+        className={`sticky top-0 h-svh max-h-svh shrink-0 self-start overflow-x-hidden overflow-y-auto border-l bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear ${settingsOpen ? "w-2/3 md:w-1/3" : "w-0 border-l-0"
+          }`}
       >
         <div className="w-full min-w-0">
           <div className="flex flex-col gap-0.5 p-4">
@@ -185,11 +215,10 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
                   aria-controls={`${tab}-panel`}
                   tabIndex={content === tab ? 0 : -1}
                   onClick={() => setContent(tab)}
-                  className={`border-b-2 px-3 py-2.5 text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
-                    content === tab
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
-                  }`}
+                  className={`border-b-2 px-3 py-2.5 text-sm font-medium capitalize transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${content === tab
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                    }`}
                 >
                   {tab}
                 </button>
