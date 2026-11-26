@@ -58,6 +58,11 @@ class GenerationService:
             request.voice_id,
             user_id,
         )
+        # Voice lookup is complete. Release its read connection while the
+        # model runs, which can take several minutes.
+        if self.voice_db is not None:
+            await self.voice_db.commit()
+
         if not self.tts_provider.capabilities().supports_voice_cloning:
             raise InvalidRequestError(
                 "The configured speech provider does not support stored voice references."
@@ -82,6 +87,10 @@ class GenerationService:
         self.db.add(record)
         await self.db.commit()
         await self.db.refresh(record)
+        generation_id = record.id
+        # Do not hold a database connection during slow model inference.
+        # The session can check out a fresh connection when saving the key.
+        await self.db.commit()
 
         try:
             with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
@@ -94,7 +103,7 @@ class GenerationService:
                     metadata=request.metadata
                 )
     
-            storage_key = f"generations/{user_id}/{record.id}.{result.format}"
+            storage_key = f"generations/{user_id}/{generation_id}.{result.format}"
             # self.storage.save_bytes(storage_key, result.data, content_type=f"audio/{result.format}")
 
             await asyncio.to_thread(
@@ -110,16 +119,17 @@ class GenerationService:
             # `status` is the public/private visibility enum, not generation
             # progress. A stored object key indicates that audio is available.
             record.s3_object_key = storage_key
-            # record.completed_at = datetime.now(timezone.utc)
+            await self.db.commit()
 
         except ProviderError as exc:
+            await self.db.rollback()
             raise
         except (BotoCoreError, ClientError) as error:
             await self.db.rollback()
             raise ServiceUnavailableException("Voice storage is temporarily unavailable ") from error
-        finally:
-            await self.db.commit()
-            await self.db.refresh(record)
+        except Exception:
+            await self.db.rollback()
+            raise
 
         return self._serialize_audio(record)
 

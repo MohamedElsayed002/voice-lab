@@ -13,8 +13,10 @@
   },
   "LocaleSwitcher": {
     "switchLanguage": "Sprache zu {locale} wechseln",
+    "selectLanguage": "Sprache auswählen",
     "en": "Englisch",
-    "de": "Deutsch"
+    "de": "Deutsch",
+    "ar": "Arabisch"
   },
   "Home": {
     "metadata": {
@@ -116,6 +118,7 @@
     "switchToRegister": "Noch kein Konto? Erstelle eines",
     "switchToLogin": "Du hast bereits ein Konto? Anmelden",
     "signOut": "Abmelden",
+    "signOutSuccess": "Du wurdest erfolgreich abgemeldet.",
     "sessionTitle": "Angemeldet",
     "sessionLoading": "Sitzung wird geprüft...",
     "backendUnavailable": "Dein Konto konnte nicht mit der API überprüft werden."
@@ -137,6 +140,29 @@
   },
   "Studio": {
     "title": "Podcaststudio"
+  },
+  "Sidebar": {
+    "dashboard": "Dashboard", "exploreVoices": "Stimmen entdecken", "textToSpeech": "Text zu Sprache", "twoSpeakerPodcast": "Podcast mit zwei Sprechern", "voiceCloning": "Stimmenklonen", "settings": "Einstellungen", "helpAndSupport": "Hilfe und Support", "others": "Weitere", "account": "Konto", "logoAlt": "PodForge-Logo"
+  },
+  "UserDropdown": {
+    "myAccount": "Mein Konto", "settings": "Einstellungen", "myVoices": "Meine Stimmen", "favorites": "Favoriten", "generation": "Generierung", "userAvatar": "Benutzeravatar"
+  },
+  "TextToSpeech": {
+    "title": "Text zu Sprache", "voiceSettings": "Spracheinstellungen", "closeVoiceSettings": "Spracheinstellungen schließen", "openVoiceSettings": "Spracheinstellungen öffnen",
+    "textToSpeak": "Zu sprechender Text", "placeholder": "Gib den Text ein oder füge ihn ein, den deine Stimme sprechen soll...", "editorHelp": "Füge dein Skript ein oder wähle unten einen Ton für ein Beispiel.", "tooLong": "Der Text darf höchstens 2.000 Zeichen lang sein.", "textRequired": "Gib Text ein, um Sprache zu erzeugen.",
+    "startingPoint": "Du brauchst einen Einstieg?", "startingPointHelp": "Wähle einen Ton, um ein Beispiel einzufügen. Du kannst es anschließend bearbeiten.", "readyWithVoice": "{name} ist bereit zum Sprechen.", "chooseVoiceToContinue": "Wähle im Einstellungsbereich eine Stimme aus.", "generateAudio": "Audio erstellen",
+    "tabsLabel": "Bereiche der Spracheinstellungen", "settingsTab": "Einstellungen", "historyTab": "Verlauf", "speechSettings": "Spracheinstellungen",
+    "voice": "Stimme", "voiceUnavailable": "Diese Stimme ist nicht verfügbar. Wähle eine andere Stimme aus.", "chooseVoice": "Wähle die Stimme für die Sprachgenerierung.", "loadingVoices": "Stimmen werden geladen...", "voicesUnavailable": "Stimmen nicht verfügbar", "noVoices": "Keine Stimmen verfügbar", "chooseVoicePlaceholder": "Stimme auswählen", "availableVoices": "Verfügbare Stimmen", "loadVoicesError": "Stimmen konnten nicht geladen werden. Prüfe deine Verbindung und versuche es erneut.", "retry": "Erneut versuchen",
+    "language": "Sprache", "chooseLanguage": "Sprache auswählen", "availableLanguages": "Verfügbare Sprachen", "english": "Englisch", "german": "Deutsch", "arabic": "Arabisch",
+    "exaggeration": "Ausdrucksstärke", "exaggerationAria": "Ausdrucksstärke der Stimme", "exaggerationHelp": "Steuert meist Ausdruck und Emotion der erzeugten Sprache.", "exaggerationHigh": "Höhere Werte können dramatischer klingen.",
+    "cfgWeight": "CFG-Gewichtung", "cfgWeightAria": "CFG-Gewichtung der Stimme", "cfgHigh": "Höhere Werte halten das Modell stärker an die Vorgabe.", "cfgLow": "Niedrigere Werte erlauben mehr Variation.",
+    "temperature": "Temperatur", "temperatureAria": "Temperatur der Stimme", "temperatureLow": "Niedriger (0,2) → vorhersehbarer.", "temperatureHigh": "Höher (1,2) → kreativer und abwechslungsreicher.",
+    "repetitionPenalty": "Wiederholungsstrafe", "repetitionPenaltyAria": "Wiederholungsstrafe der Stimme", "noPenalty": "1,0 = keine Strafe.", "reduceRepetition": ">1,0 verringert Wiederholungen.", "unnaturalWarning": "Sehr hohe Werte können Sprache oder Text unnatürlich wirken lassen.",
+    "minP": "Min P", "minPAria": "Min P der Stimme", "minPHelp": "Filtert Tokens mit äußerst geringer Wahrscheinlichkeit heraus.", "minPHigh": "Höhere Werte machen die Ausgabe fokussierter.",
+    "topP": "Top P", "topPAria": "Top P der Stimme", "topPAll": "1,0 = alle Wahrscheinlichkeiten verwenden.", "topPSample": "0,9 = aus den wahrscheinlichsten 90 % der Wahrscheinlichkeitsmasse auswählen.",
+    "historyTitle": "Generierungsverlauf", "loadingHistory": "Verlauf wird geladen…", "historyError": "Der Generierungsverlauf konnte nicht geladen werden.", "emptyHistory": "Deine erstellten Audiodateien erscheinen hier.",
+    "samples": { "Funny": "Ich wollte heute Morgen mein Leben in den Griff bekommen. Wir haben uns geeinigt: Ich schrieb eine To-do-Liste, und danach machten wir beide Feierabend.", "Romantic": "Irgendwie fühlt sich selbst ein gewöhnlicher Tag besonders an, wenn ich ihn mit dir teilen kann.", "Storytelling": "Die alte Uhr schlug Mitternacht, und plötzlich leuchteten alle Fenster des verlassenen Hauses auf.", "Professional": "Vielen Dank, dass Sie dabei sind. Heute besprechen wir die wichtigsten Ideen und praktischen Schritte, mit denen Ihr Team vorankommt.", "Calm": "Atme langsam ein, komm ganz im Moment an und lass den Lärm des Tages sanft verklingen." },
+    "tones": { "Funny": "Humorvoll", "Romantic": "Romantisch", "Storytelling": "Erzählung", "Professional": "Professionell", "Calm": "Ruhig" }
   },
   "settings": {
     "header": "Einstellungen",

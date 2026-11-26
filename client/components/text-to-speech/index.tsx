@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useTranslations } from "next-intl"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AudioLines, PanelRightClose, PanelRightOpen } from "lucide-react"
@@ -21,6 +22,7 @@ const MAX_TEXT_LENGTH = 2000
 
 
 export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
+  const t = useTranslations("TextToSpeech")
 
   const [settingsOpen, setSettingsOpen] = useState(true)
   const [content, setContent] = useState<"settings" | "history">("settings")
@@ -41,7 +43,8 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
       temperature: 0.8,
       repetition_penalty: 1.2,
       min_p: 0.05,
-      top_p: 1.0
+      top_p: 1.0,
+      language: "en"
     },
   })
 
@@ -56,6 +59,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
     const payload = {
       text: values.text,
       voice_id: values.voiceId,
+      language: values.language,
       metadata: {
         "exaggeration": values.exaggeration,
         "min_p": values.min_p,
@@ -65,6 +69,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
         "repetition_penalty": values.repetition_penalty
       }
     }
+
 
     generateTextMutate(payload, {
       onSuccess: (data) => {
@@ -78,13 +83,13 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
       className="flex min-h-0 flex-1"
       onSubmit={form.handleSubmit(handleGenerate)}
     >
-      <main className="min-w-0 flex-1 p-6" aria-label="Text to speech content">
+      <main className="min-w-0 flex-1 p-6" aria-label={t("title")}>
         <header className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold">Text to speech</h1>
+            <h1 className="text-2xl font-semibold">{t("title")}</h1>
             {selectedVoice && (
               <div className="mt-3 flex min-w-0 items-center gap-3">
-                <VoiceAvatar seed={selectedVoice.id} name={selectedVoice.name} className="size-12" />
+                <VoiceAvatar seed={selectedVoice.id} avatar={selectedVoice.avatar_url ?? undefined} name={selectedVoice.name} className="size-12" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{selectedVoice.name}</p>
                   <p className="truncate text-xs text-muted-foreground">
@@ -99,7 +104,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             type="button"
             variant="ghost"
             size="icon-sm"
-            aria-label={settingsOpen ? "Close voice settings" : "Open voice settings"}
+            aria-label={settingsOpen ? t("closeVoiceSettings") : t("openVoiceSettings")}
             aria-expanded={settingsOpen}
             onClick={() => setSettingsOpen((open) => !open)}
           >
@@ -109,7 +114,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
         <section className="mt-6 rounded-xl border bg-card p-4 shadow-sm sm:p-5" aria-labelledby="script-label">
           <div className="mb-3 flex items-center justify-between gap-3">
             <Label id="script-label" htmlFor="speech-text" className="text-sm font-semibold">
-              Text to speak
+              {t("textToSpeak")}
             </Label>
             <span
               className={`text-xs tabular-nums ${textTooLong ? "font-medium text-destructive" : "text-muted-foreground"}`}
@@ -120,7 +125,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
           </div>
           <Textarea
             id="speech-text"
-            placeholder="Write or paste the words you want your voice to say..."
+            placeholder={t("placeholder")}
             aria-describedby="speech-text-help speech-text-error"
             aria-invalid={textTooLong || Boolean(form.formState.errors.text)}
             className={`field-sizing-fixed h-[min(40vh,560px)] resize-none min-h-[320px]  rounded-xl p-4 text-base leading-7 placeholder:text-muted-foreground/70 ${textTooLong
@@ -131,11 +136,11 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
           />
           <div className="mt-2 flex min-h-5 items-start justify-between gap-3">
             <p id="speech-text-help" className="text-xs text-muted-foreground">
-              Add your script or choose a tone below to start with a sample.
+              {t("editorHelp")}
             </p>
-            {textTooLong && (
+            {form.formState.errors.text && (
               <p id="speech-text-error" role="alert" className="shrink-0 text-xs font-medium text-destructive">
-                Keep your text under 2,000 characters.
+                {textTooLong ? t("tooLong") : t("textRequired")}
               </p>
             )}
           </div>
@@ -143,9 +148,9 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
 
           <div className="mt-6 border-t pt-5">
             <div className="mb-3">
-              <h2 className="text-sm font-semibold">Need a starting point?</h2>
+              <h2 className="text-sm font-semibold">{t("startingPoint")}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Pick a tone to fill the editor with an example. You can edit it afterward.
+                {t("startingPointHelp")}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -155,14 +160,14 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => form.setValue("text", suggestion.text, {
+                  onClick={() => form.setValue("text", t(`samples.${suggestion.tone}`), {
                     shouldDirty: true,
                     shouldTouch: true,
                     shouldValidate: true,
                   })}
                   className="rounded-full px-3"
                 >
-                  {suggestion.tone}
+                  {t(`tones.${suggestion.tone}`)}
                 </Button>
               ))}
             </div>
@@ -171,8 +176,8 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
           <div className="mt-6 flex flex-col-reverse items-start justify-between gap-3 border-t pt-5 sm:flex-row sm:items-center">
             <p className="text-xs text-muted-foreground">
               {selectedVoice
-                ? `Ready to speak with ${selectedVoice.name}.`
-                : "Choose a voice in the settings panel to continue."}
+                ? t("readyWithVoice", { name: selectedVoice.name })
+                : t("chooseVoiceToContinue")}
             </p>
             <Button
               type="submit"
@@ -181,7 +186,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
               className="w-full gap-2 sm:w-auto"
             >
               <AudioLines aria-hidden="true" />
-              Generate audio
+              {t("generateAudio")}
             </Button>
           </div>
         </section>
@@ -197,14 +202,14 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
       </main>
 
       <aside
-        aria-label="Voice settings"
+        aria-label={t("voiceSettings")}
         aria-hidden={!settingsOpen}
         className={`sticky top-0 h-svh max-h-svh shrink-0 self-start overflow-x-hidden overflow-y-auto border-l bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear ${settingsOpen ? "w-2/3 md:w-1/3" : "w-0 border-l-0"
           }`}
       >
         <div className="w-full min-w-0">
           <div className="flex flex-col gap-0.5 p-4">
-            <div className="grid grid-cols-2 border-b" role="tablist" aria-label="Voice settings sections">
+            <div className="grid grid-cols-2 border-b" role="tablist" aria-label={t("tabsLabel")}>
               {(["settings", "history"] as const).map((tab) => (
                 <button
                   key={tab}
@@ -220,7 +225,7 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
                     : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
                     }`}
                 >
-                  {tab}
+                  {tab === "settings" ? t("settingsTab") : t("historyTab")}
                 </button>
               ))}
             </div>

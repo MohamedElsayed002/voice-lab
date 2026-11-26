@@ -16,7 +16,7 @@ export function SignOutButton() {
   async function signOut() {
     mutate(undefined, {
       onSuccess: () => {
-        toast.success("User logged out successfully")
+        toast.success(t("signOutSuccess"))
         router.push("/login")
       }
     })

@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
+import { Link, usePathname } from "@/i18n/navigation";
 
 import {
   Sidebar,
@@ -26,15 +27,13 @@ import {
   Volume2,
   Settings,
   Headphones,
-  Mic2,
   MessagesSquare,
 } from "lucide-react";
-import Link from "next/link";
 import { useAuthStore } from "@/store/auth.store";
 
 interface MenuItem {
   title: string;
-  url?: string;
+  url?: "/studio" | "/voices" | "/text-to-speech" | "/generate-podcast-debate" | "/my-voices" | "/settings" | "mailto:mohammadelsayed002@gmail.com";
   icon: LucideIcon;
   onClick?: () => void;
 };
@@ -58,12 +57,14 @@ function NavSection({ label, items, pathname }: NavSectionProps) {
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
-                render={item.url ? <Link href={item.url} /> : undefined}
+                render={item.url?.startsWith("mailto:")
+                  ? <a href={item.url} />
+                  : item.url
+                    ? <Link href={item.url} />
+                    : undefined}
                 isActive={
                   item.url
-                    ? item.url === "/"
-                      ? pathname === "/"
-                      : pathname.startsWith(item.url)
+                    ? !item.url.startsWith("mailto:") && pathname.startsWith(item.url)
                     : false
                 }
                 onClick={item.onClick}
@@ -84,22 +85,24 @@ function NavSection({ label, items, pathname }: NavSectionProps) {
 }
 
 export function DashboardSidebar() {
+  const locale = useLocale();
+  const t = useTranslations("Sidebar");
   const pathname = usePathname();
   const { open } = useSidebar();
   const user = useAuthStore((state) => state.user);
   const mainMenuItems: MenuItem[] = [
     {
-      title: "Dashboard",
+      title: t("dashboard"),
       url: "/studio",
       icon: Home,
     },
     {
-      title: "Explore voices",
+      title: t("exploreVoices"),
       url: "/voices",
       icon: LayoutGrid,
     },
     {
-      title: "Text to speech",
+      title: t("textToSpeech"),
       url: "/text-to-speech",
       icon: AudioLines,
     },
@@ -109,12 +112,13 @@ export function DashboardSidebar() {
     //   icon: Mic2
     // },
     {
-      title: "Two-speakers podcast",
-      url: '/generate-podcast-debate',
-      icon: MessagesSquare
+      title: t("twoSpeakerPodcast"),
+      url: "/generate-podcast-debate",
+      icon: MessagesSquare,
     },
     {
-      title: "Voice cloning",
+      title: t("voiceCloning"),
+      url: "/my-voices",
       icon: Volume2,
       //   onClick: () => setVoiceDialogOpen(true),
     },
@@ -122,11 +126,12 @@ export function DashboardSidebar() {
 
   const othersMenuItems: MenuItem[] = [
     {
-      title: "Settings",
+      title: t("settings"),
+      url: "/settings",
       icon: Settings,
     },
     {
-      title: "Help and support",
+      title: t("helpAndSupport"),
       url: "mailto:mohammadelsayed002@gmail.com",
       icon: Headphones,
     },
@@ -134,14 +139,14 @@ export function DashboardSidebar() {
 
   return (
     <>
-      <Sidebar collapsible="icon">
+      <Sidebar side={locale === "ar" ? "right" : "left"} collapsible="icon">
         <SidebarHeader className="flex flex-col gap-4 pt-4">
           <div
             className="flex items-center gap-2 pl-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pl-0">
             <Link href="/studio">
               <Image
                 src="/podforge_logo.png"
-                alt="Resonance"
+                alt={t("logoAlt")}
                 width={50}
                 height={50}
                 className="rounded-sm cursor-pointer"
@@ -163,7 +168,7 @@ export function DashboardSidebar() {
         <SidebarContent>
           <NavSection items={mainMenuItems} pathname={pathname} />
           <NavSection
-            label="Others"
+            label={t("others")}
             items={othersMenuItems}
             pathname={pathname}
           />
@@ -176,7 +181,7 @@ export function DashboardSidebar() {
               <span className="flex size-8 items-center justify-center rounded-full bg-red-100 text-sm text-red-900">
                 {(user?.name ?? user?.email ?? "A").charAt(0).toUpperCase()}
               </span>
-              {open && <p className="hidden truncate text-sm md:block">{user?.name ?? user?.email ?? "Account"}</p>}
+              {open && <p className="hidden truncate text-sm md:block">{user?.name ?? user?.email ?? t("account")}</p>}
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>

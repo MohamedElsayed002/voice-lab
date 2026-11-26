@@ -19,26 +19,35 @@ import {
     AlertDescription,
     AlertTitle,
 } from "@/components/ui/alert"
-import { InfoIcon, LogOut, UserRound } from "lucide-react"
+import { CheckIcon, ChevronDown, InfoIcon, LogOut, UserRound } from "lucide-react"
 import { Input } from "../ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useLocale } from "next-intl"
+import { hasLocale, useLocale } from "next-intl"
 import { usePathname, useRouter } from "@/i18n/navigation"
-import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+import { routing } from "@/i18n/routing"
 import { useTranslations } from "use-intl"
 import { useLogoutAllDevices } from "@/hooks/use-auth"
 
+import { US, DE, ES, FR, IN, IT, JP, KR, NL, EG } from "country-flag-icons/react/3x2"
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 const languages = [
-    { locale: "en", label: "English", flag: "🇺🇸" },
-    { locale: "de", label: "Deutsch", flag: "🇩🇪" },
+    { code: "en", name: "English", Flag: US },
+    { code: "de", name: "Deutsch", Flag: DE },
+    { code: "ar", name: "العربية", Flag: EG},
+    { code: "es", name: "Español", Flag: ES },
+    { code: "fr", name: "Français", Flag: FR },
+    { code: "hi", name: "हिन्दी", Flag: IN },
+    { code: "it", name: "Italiano", Flag: IT },
+    { code: "ja", name: "日本語", Flag: JP },
+    { code: "ko", name: "한국어", Flag: KR },
+    { code: "nl", name: "Nederlands", Flag: NL },
 ] as const
 
 export const UserData = () => {
@@ -51,7 +60,7 @@ export const UserData = () => {
     const locale = useLocale()
     const pathname = usePathname()
     const router = useRouter()
-    const selectedLanguage = languages.find((language) => language.locale === locale)
+    const selectedLanguage = languages.find((language) => language.code === locale)
 
     const { mutate: logoutAllDevicesMutate, isPending: logoutOutAllPending } = useLogoutAllDevices()
 
@@ -60,11 +69,9 @@ export const UserData = () => {
         console.log(checked)
     }
 
-    const handleLanguageChange = (value: string | null) => {
-        const language = languages.find((option) => option.locale === value)
-        if (!language) return
-
-        router.replace(pathname, { locale: language.locale })
+    const handleLanguageChange = (code: string) => {
+        if (!hasLocale(routing.locales, code) || code === locale) return
+        router.replace(pathname, { locale: code })
     }
 
 
@@ -218,36 +225,40 @@ export const UserData = () => {
                 <div className="space-y-1">
                     <h2 className="text-sm font-semibold">{t("applicationLanguage")}</h2>
                     <p className="text-sm text-muted-foreground">
-                        {selectedLanguage?.label ?? locale}
+                        {selectedLanguage?.name ?? locale}
                     </p>
                 </div>
-                <Select value={locale} onValueChange={handleLanguageChange}>
-                    <SelectTrigger aria-label={t("applicationLanguage")} className="w-36">
-                        <SelectValue className="min-w-0 flex-1">
-                            {(value: unknown) => {
-                                const language = languages.find((option) => option.locale === value)
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        className="flex items-center gap-2 rounded-lg border px-3 py-2"
+                        render={<button type="button" />}
+                    >
+                        {selectedLanguage?.Flag ? <selectedLanguage.Flag className="h-4 w-4 rounded-sm" /> : null}
+                        {selectedLanguage?.name}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                    </DropdownMenuTrigger>
 
-                                return language ? (
-                                    <>
-                                        <span aria-hidden="true">{language.flag}</span>
-                                        <span>{language.label}</span>
-                                    </>
-                                ) : t("selectLanguage")
-                            }}
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent align="end">
-                        <SelectGroup>
-                            <SelectLabel>{t("language")}</SelectLabel>
-                            {languages.map((language) => (
-                                <SelectItem key={language.locale} value={language.locale}>
-                                    <span aria-hidden="true">{language.flag}</span>
-                                    <span>{language.label}</span>
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </Select>
+                    <DropdownMenuContent
+                        align="end"
+                        className="w-44 bg-zinc-900 border-zinc-800"
+                    >
+                        {languages.map(({ code, name, Flag }) => (
+                            <DropdownMenuItem
+                                key={code}
+                                disabled={!hasLocale(routing.locales, code)}
+                                onClick={() => handleLanguageChange(code)}
+                                className="flex items-center gap-2 cursor-pointer"
+                            >
+                                <Flag className="h-4 w-4 rounded-sm" />
+                                <span>{name}</span>
+
+                                {locale === code && (
+                                    <CheckIcon className="ml-auto h-4 w-4" />
+                                )}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
             <div className="flex items-center justify-between gap-6 py-4">
                 <div className="space-y-1">

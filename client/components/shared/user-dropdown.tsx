@@ -14,11 +14,12 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { Mic, Settings, User, UserRound } from "lucide-react"
-import Link from "next/link"
+import { UserRound } from "lucide-react"
+import { Link } from "@/i18n/navigation"
+import { useTranslations } from "next-intl"
 
 export const UserDropdown = () => {
-
+    const t = useTranslations("UserDropdown")
     const user = useAuthStore((state) => state.user)
 
     return (
@@ -27,7 +28,7 @@ export const UserDropdown = () => {
                 <Avatar className="size-8 overflow-hidden rounded-full border-2 border-background shadow-md ring-1 ring-border">
                     <AvatarImage
                         src={user?.avatar || undefined}
-                        alt="user avatar"
+                        alt={t("userAvatar")}
                         className="size-full rounded-full object-cover"
                     />
                     <AvatarFallback className="bg-primary/10 text-primary">
@@ -40,26 +41,26 @@ export const UserDropdown = () => {
             </Button>} />
             <DropdownMenuContent className="w-48" align="start">
                 <DropdownMenuGroup>
-                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("myAccount")}</DropdownMenuLabel>
                     <DropdownMenuItem>
                         {/* <User/> */}
                         <Link href="/settings">
-                            Settings
+                            {t("settings")}
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                         <Link href="/my-voices">
-                            My voices
+                            {t("myVoices")}
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                         <Link href="/favorites">
-                            Favorites
+                            {t("favorites")}
                         </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem>
                         <Link href="/my-generation">
-                            Generation
+                            {t("generation")}
                         </Link>
                     </DropdownMenuItem>
                 </DropdownMenuGroup>

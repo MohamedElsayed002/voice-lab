@@ -42,6 +42,7 @@ export default async function LocaleLayout({
   return (
     <html
       lang={locale}
+      dir={locale === "ar" ? "rtl" : "ltr"}
       className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
@@ -49,7 +50,7 @@ export default async function LocaleLayout({
           <NuqsAdapter>
             <AuthProvider>{children}</AuthProvider>
           </NuqsAdapter>
-          <Toaster/>
+          <Toaster />
         </NextIntlClientProvider>
       </body>
     </html>

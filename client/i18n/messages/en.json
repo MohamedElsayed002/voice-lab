@@ -13,8 +13,10 @@
   },
   "LocaleSwitcher": {
     "switchLanguage": "Switch language to {locale}",
+    "selectLanguage": "Select language",
     "en": "English",
-    "de": "Deutsch"
+    "de": "Deutsch",
+    "ar": "Arabic"
   },
   "Home": {
     "metadata": {
@@ -116,6 +118,7 @@
     "switchToRegister": "Need an account? Create one",
     "switchToLogin": "Already have an account? Log in",
     "signOut": "Sign out",
+    "signOutSuccess": "You have been signed out successfully.",
     "sessionTitle": "Signed in",
     "sessionLoading": "Checking your session...",
     "backendUnavailable": "Could not verify your account with the API."
@@ -137,6 +140,29 @@
   },
   "Studio": {
     "title": "Podcast studio"
+  },
+  "Sidebar": {
+    "dashboard": "Dashboard", "exploreVoices": "Explore voices", "textToSpeech": "Text to speech", "twoSpeakerPodcast": "Two-speaker podcast", "voiceCloning": "Voice cloning", "settings": "Settings", "helpAndSupport": "Help and support", "others": "Others", "account": "Account", "logoAlt": "PodForge logo"
+  },
+  "UserDropdown": {
+    "myAccount": "My account", "settings": "Settings", "myVoices": "My voices", "favorites": "Favorites", "generation": "Generation", "userAvatar": "User avatar"
+  },
+  "TextToSpeech": {
+    "title": "Text to speech", "voiceSettings": "Voice settings", "closeVoiceSettings": "Close voice settings", "openVoiceSettings": "Open voice settings",
+    "textToSpeak": "Text to speak", "placeholder": "Write or paste the words you want your voice to say...", "editorHelp": "Add your script or choose a tone below to start with a sample.", "tooLong": "Keep your text under 2,000 characters.", "textRequired": "Enter some text to generate speech.",
+    "startingPoint": "Need a starting point?", "startingPointHelp": "Pick a tone to fill the editor with an example. You can edit it afterward.", "readyWithVoice": "Ready to speak with {name}.", "chooseVoiceToContinue": "Choose a voice in the settings panel to continue.", "generateAudio": "Generate audio",
+    "tabsLabel": "Voice settings sections", "settingsTab": "Settings", "historyTab": "History", "speechSettings": "Speech settings",
+    "voice": "Voice", "voiceUnavailable": "That voice is unavailable. Choose another voice to continue.", "chooseVoice": "Choose the voice you want to use for speech generation.", "loadingVoices": "Loading voices...", "voicesUnavailable": "Voices unavailable", "noVoices": "No voices available", "chooseVoicePlaceholder": "Choose a voice", "availableVoices": "Available voices", "loadVoicesError": "Couldn’t load voices. Check your connection and try again.", "retry": "Retry",
+    "language": "Language", "chooseLanguage": "Choose a language", "availableLanguages": "Available languages", "english": "English", "german": "German", "arabic": "Arabic",
+    "exaggeration": "Exaggeration", "exaggerationAria": "Voice exaggeration", "exaggerationHelp": "Usually controls expressiveness and emotion in generated speech.", "exaggerationHigh": "Higher values can sound more dramatic.",
+    "cfgWeight": "CFG weight", "cfgWeightAria": "Voice CFG weight", "cfgHigh": "Higher values make the model follow the prompt more strictly.", "cfgLow": "Lower values allow more variation.",
+    "temperature": "Temperature", "temperatureAria": "Voice temperature", "temperatureLow": "Lower (0.2) → more predictable.", "temperatureHigh": "Higher (1.2) → more creative and varied.",
+    "repetitionPenalty": "Repetition penalty", "repetitionPenaltyAria": "Voice repetition penalty", "noPenalty": "1.0 = no penalty.", "reduceRepetition": ">1.0 reduces repetition.", "unnaturalWarning": "Very high values can make speech or text sound unnatural.",
+    "minP": "Min P", "minPAria": "Voice Min P", "minPHelp": "Filters out tokens with extremely low probability.", "minPHigh": "Higher values make output more focused.",
+    "topP": "Top P", "topPAria": "Voice Top P", "topPAll": "1.0 = use all probabilities.", "topPSample": "0.9 = sample from the most likely 90% of probability mass.",
+    "historyTitle": "Generation history", "loadingHistory": "Loading history…", "historyError": "Could not load generation history.", "emptyHistory": "Your generated audio will appear here.",
+    "samples": { "Funny": "I tried to get my life together this morning. We compromised: I made a to-do list, and then we both took the afternoon off.", "Romantic": "Somehow, even an ordinary day feels special when I get to share it with you.", "Storytelling": "The old clock struck midnight, and every window in the empty house lit up at once.", "Professional": "Thank you for joining us. Today, we’ll walk through the key ideas and practical steps to help your team move forward.", "Calm": "Take a slow breath, settle into this moment, and let the noise of the day gently fade away." },
+    "tones": { "Funny": "Funny", "Romantic": "Romantic", "Storytelling": "Storytelling", "Professional": "Professional", "Calm": "Calm" }
   },
   "settings": {
     "header": "Settings",
