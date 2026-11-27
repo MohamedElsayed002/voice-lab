@@ -90,8 +90,8 @@ export function useGenerateTTS() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationKey: ["generate-tts"],
-    mutationFn: async ({voice_id, language, text, metadata}: {voice_id: string, language: string, text: string, metadata: VoiceMetadata}) => {
-      const data = await generateTTS(voice_id,language, text,metadata)
+    mutationFn: async ({voice_id, language,provider, text, metadata}: {voice_id: string, language: string, provider: string, text: string, metadata: VoiceMetadata}) => {
+      const data = await generateTTS(voice_id,language,provider ,text,metadata)
       return data
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["user-history"] }),

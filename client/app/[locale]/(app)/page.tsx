@@ -1,17 +1,19 @@
-import { HeroSection } from "@/components/home/hero-section"
-import { Process } from "@/components/home/process"
-import { TrustedCompanies } from "@/components/home/trusted"
-import { Header } from "@/components/shared/header"
-import type { Metadata } from "next"
-import { getTranslations } from "next-intl/server"
+import { HeroSection } from "@/components/home/hero-section";
+import { Process } from "@/components/home/process";
+import { FeatureShowcase } from "@/components/home/feature-showcase";
+import { AudioPreview } from "@/components/home/audio-preview";
+import { TrustedCompanies } from "@/components/home/trusted";
+import { Header } from "@/components/shared/header";
+import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations("Home.metadata")
+  const t = await getTranslations("Home.metadata");
 
   return {
     title: t("title"),
     description: t("description"),
-  }
+  };
 }
 
 export default function App() {
@@ -35,6 +37,8 @@ export default function App() {
       </div>
       <TrustedCompanies />
       <Process />
+      <FeatureShowcase />
+      <AudioPreview />
     </main>
-  )
+  );
 }

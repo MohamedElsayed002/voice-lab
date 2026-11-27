@@ -14,7 +14,8 @@ export const textToSpeechSchema = z.object({
   repetition_penalty: z.float32().min(1.0).max(2.0),
   min_p: z.float32().min(0.0).max(1.0),
   top_p: z.float32().min(0.0).max(1.0),
-  language: z.string()
+  language: z.string(),
+  provider: z.string()
 })
 
 export type TextToSpeechFormValues = z.infer<typeof textToSpeechSchema>

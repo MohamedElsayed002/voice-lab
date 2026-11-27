@@ -44,7 +44,8 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
       repetition_penalty: 1.2,
       min_p: 0.05,
       top_p: 1.0,
-      language: "en"
+      language: "en",
+      provider: "chatterbox-turbo"
     },
   })
 
@@ -60,13 +61,15 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
       text: values.text,
       voice_id: values.voiceId,
       language: values.language,
+      provider: values.provider,
       metadata: {
         "exaggeration": values.exaggeration,
         "min_p": values.min_p,
         "top_p": values.top_p,
         "cfg_weight": values.cfg_weight,
         "temperature": values.temperature,
-        "repetition_penalty": values.repetition_penalty
+        "repetition_penalty": values.repetition_penalty,
+        "provider": values.provider
       }
     }
 
@@ -80,10 +83,10 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
 
   return (
     <form
-      className="flex min-h-0 flex-1"
+      className="flex h-full min-h-0 flex-1 overflow-hidden"
       onSubmit={form.handleSubmit(handleGenerate)}
     >
-      <main className="min-w-0 flex-1 p-6" aria-label={t("title")}>
+      <main className="studio-scrollbar min-h-0 min-w-0 flex-1 overflow-y-auto p-6" aria-label={t("title")}>
         <header className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold">{t("title")}</h1>
@@ -199,12 +202,13 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             />
           )}
         </section>
+        <section className='h-[500px]'></section>
       </main>
 
       <aside
         aria-label={t("voiceSettings")}
         aria-hidden={!settingsOpen}
-        className={`sticky top-0 h-svh max-h-svh shrink-0 self-start overflow-x-hidden overflow-y-auto border-l bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear ${settingsOpen ? "w-2/3 md:w-1/3" : "w-0 border-l-0"
+        className={`studio-scrollbar h-full max-h-full shrink-0 overflow-x-hidden overflow-y-auto border-l bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear ${settingsOpen ? "w-2/3 md:w-1/3" : "w-0 border-l-0"
           }`}
       >
         <div className="w-full min-w-0">

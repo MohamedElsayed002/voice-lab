@@ -27,6 +27,12 @@ const languages = [
   { code: "ar", Flag: EG },
 ]
 
+const providers = [
+  { id: 'chatterbox-turbo', name: 'Chatterbox Turbo' },
+  { id: 'chatterbox', name: 'Chatterbox Multilingual V2' },
+  { id: 'openai', name: 'OpenAI' }
+]
+
 export const Settings = ({
   form,
 }: {
@@ -104,7 +110,7 @@ export const Settings = ({
                     >
                       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
                         <span className="flex w-full min-w-0 items-center gap-2.5">
-                          {voice.avatar_url ? <VoiceAvatar name={voice.name} seed={voice.name} avatar={voice.avatar_url} className="size-8 rounded-full" /> : <VoiceOrb seed={voice.name} size={24}  /> }
+                          {voice.avatar_url ? <VoiceAvatar name={voice.name} seed={voice.name} avatar={voice.avatar_url} className="size-8 rounded-full" /> : <VoiceOrb seed={voice.name} size={24} />}
                           <span className="truncate font-medium">{voice.name}</span>
                         </span>
                         <span className="pl-9 text-xs text-muted-foreground">
@@ -140,6 +146,48 @@ export const Settings = ({
           </div>
         )}
       </div>
+
+      <div>
+        <label htmlFor="voice-provider" className="text-sm font-medium">
+          {t("provider")}
+        </label>
+        <Controller
+          control={form.control}
+          name="provider"
+          render={({ field }) => {
+            const selectedProvider = providers.find(
+              (provider) => provider.id === field.value
+            )
+
+            return (
+              <Select
+                value={field.value || null}
+                onValueChange={(value) => field.onChange(typeof value === "string" ? value : "")}
+              >
+                <SelectTrigger
+                  id="voice-provider"
+                  className="h-12 w-full justify-start gap-2.5 rounded-xl px-2.5"
+                >
+                  <SelectValue className="min-w-0 flex-1">
+                    {selectedProvider?.name ?? t("chooseProvider")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectLabel>{t("availableProviders")}</SelectLabel>
+                    {providers.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        <span>{provider.name}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            )
+          }}
+        />
+      </div>
+
 
       <div>
         <label htmlFor="voice-language" className="text-sm font-medium">

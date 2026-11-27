@@ -497,6 +497,8 @@ export interface components {
              * @default default
              */
             voice_id: string;
+            /** Provider */
+            provider?: string | null;
             /**
              * Language
              * @default en

@@ -5,7 +5,7 @@ const navigationLinks = [
   { href: "/features", label: "features" },
   { href: "/how-it-works", label: "workflow" },
   { href: "/audio-demo", label: "audioDemo" },
-  { href: "/pricing", label: "pricing" },
+  { href: "/subscription", label: "subscription" },
   { href: "/faq", label: "faq" },
 ] as const
 
