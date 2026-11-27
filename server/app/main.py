@@ -23,7 +23,7 @@ from app.auth.services.auth_service import auth_service
 
 from app.schema.generation import GenerationRequest, GenerationResponse
 from app.services.generation import GenerationService
-from app.core.dependencies import get_generation_service, get_tts_provider
+from app.core.dependencies import close_tts_providers, get_generation_service
 
 from starlette.middleware.sessions import SessionMiddleware
 from app.auth.routes.oauth import router as oauth_router
@@ -35,10 +35,8 @@ async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
         yield
     finally:
         try:
-            if get_tts_provider.cache_info().currsize:
-                await get_tts_provider().aclose()
+            await close_tts_providers()
         finally:
-            get_tts_provider.cache_clear()
             await engine.dispose()
 
 

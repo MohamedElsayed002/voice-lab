@@ -6,6 +6,7 @@ from app.schema.visibility import VisibilityStatus
 class GenerationRequest(BaseModel):
     text: str = Field(..., min_length=1)
     voice_id: str = "default"
+    provider: str | None = None
     language: str = "en"
     metadata: dict[str, Any] = Field(default_factory=dict)
 

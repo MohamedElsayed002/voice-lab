@@ -48,18 +48,20 @@ class OpenAITTSProvider(TTSProvider):
         text: str,
         voice_reference: str | None = None,
         language: str | None = None,
+        metadata: dict | None = None,
     ) -> AudioResult:
-        if voice_reference not in openai_voices:
+        if voice_reference is not None and voice_reference not in openai_voices:
             raise TTSProviderError(
                 "OpenAI TTS uses a configured preset voice and does not accept "
                 "a reference audio file."
             )
+        voice = voice_reference or self.voice
         # alloy, ash, ballad, cedar, coral, echo, marin, sage, shimmer, verse
 
         try:
             response = await self.client.audio.speech.create(
                 model=self.model,
-                voice=voice_reference,
+                voice=voice,
                 input=text,
                 response_format="wav",
                 instructions=(

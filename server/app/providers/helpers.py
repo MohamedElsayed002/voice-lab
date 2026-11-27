@@ -1,17 +1,17 @@
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
 from app.providers.base import AudioResult, TTSProvider
 from app.schema.dialogue import DialogueRequest, DialogueSegment
-from app.services.voice_service import VoiceService
-
-
-
-import io 
-import wave 
-
-
-from app.providers.base import TTSProvider
-from app.services.voice_service import VoiceService
+from app.services.voices_services import VoiceService
 from app.core.storage.local_storage import StorageBackend
+
+import io
+import wave
 
 from openai import AsyncOpenAI
 
@@ -22,20 +22,31 @@ from openai import AsyncOpenAI
 # and API limits be exceeded. Also consider rate limits and retries
 # for transient provider errors
 
-async def synthesize_dialogue(request: DialogueRequest, provider, voice_service) -> list[AudioResult]:
+async def synthesize_dialogue(
+    request: DialogueRequest,
+    provider: TTSProvider,
+    voice_service: VoiceService,
+    db: AsyncSession,
+    user_id: str,
+) -> list[AudioResult]:
 
     results: list[AudioResult] = []
 
     for segment in request.segments:
         voice_id = request.voice_ids[segment.speaker]
-        # reference_audio = voice_service.resolve
-        reference_audio = VoiceService.resolve_reference_audio(voice_id)
-
-        result = await provider.generate(
-            text=segment.text,
-            voice_reference=reference_audio,
-            language=request.language
+        _, reference_audio = await voice_service.get_voice_reference_audio(
+            db,
+            voice_id,
+            user_id,
         )
+        with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
+            reference_path = Path(temp_dir) / "reference.wav"
+            reference_path.write_bytes(reference_audio)
+            result = await provider.generate(
+                text=segment.text,
+                voice_reference=str(reference_path),
+                language=request.language,
+            )
 
         if not result.data:
             raise RuntimeError("TTS Provider returned empty audio")
@@ -115,16 +126,24 @@ async def synthesize_and_save(
         generation_id: str,
         provider: TTSProvider,
         voices: VoiceService,
-        storage: StorageBackend
+        storage: StorageBackend,
+        db: AsyncSession,
+        user_id: str,
 ) -> tuple[str, str]:
 
-    reference_audio = voices.resolve_reference_audio(voice_id)
-
-    result = await provider.generate(
-        text,
-        voice_reference=reference_audio,
-        language=language
+    _, reference_audio = await voices.get_voice_reference_audio(
+        db,
+        voice_id,
+        user_id,
     )
+    with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
+        reference_path = Path(temp_dir) / "reference.wav"
+        reference_path.write_bytes(reference_audio)
+        result = await provider.generate(
+            text,
+            voice_reference=str(reference_path),
+            language=language,
+        )
 
     if not result.data:
         raise RuntimeError("TTS Provider returned empty audio")
@@ -162,7 +181,7 @@ async def synthesize_and_save(
 # This example shows the provider-specific call; place it inside an
 # `OpenAITTSProvider` that implements your TTSProvider interface
 
-client = AsyncOpenAI()
+client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
 async def openai_speech(text: str) -> bytes:
     response = await client.audio.speech.create(

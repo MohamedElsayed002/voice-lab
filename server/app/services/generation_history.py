@@ -15,7 +15,7 @@ class GenerationHistoryService:
 
     async def get_user_generation_history(self, user_id: str) -> list[dict[str, Any]]:
         result = await self.db.execute(
-            select(Generation).where(Generation.user_id == user_id)
+            select(Generation).where(Generation.user_id == user_id).order_by(Generation.created_at.desc())
         )
         return [self._serialize(record) for record in result.scalars().all()]
 

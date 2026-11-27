@@ -7,13 +7,17 @@ from typing import Any
 import numpy as np
 import torch
 from chatterbox.mtl_tts import ChatterboxMultilingualTTS
-from chatterbox.tts_turbo import ChatterboxTurboTTS
+# from chatterbox.mtl_tts import 
+# from chatterbox.tts_turbo import ChatterboxTurboTTS
 
 # ChatterboxTurboTTS.from_local(device="device")
 
 from app.core.exceptions import TTSProviderError, UnsupportedLanguageError
 from app.providers.base import AudioResult, TTSCapabilities, TTSProvider
 
+
+# V3
+# v3_model = ChatterboxMultilingualTTS.from_pretrained(device="cpu",t3_model="v3")
 
 class ChatterboxTTSProvider(TTSProvider):
     def __init__(self) -> None:
