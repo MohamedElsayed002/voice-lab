@@ -8,14 +8,16 @@ import { AudioLines, PanelRightClose, PanelRightOpen } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useGenerateTTS, useVoices } from "@/hooks/use-voices"
-import { Settings } from "./settings"
+import { openai_voices, Settings } from "./settings"
 import { History } from "./history"
 import { VoiceAvatar } from "../voices/voice-avatar"
+import { VoiceOrb } from "@/components/shared/voice-orb"
 import { Textarea } from "../ui/textarea"
 import { Label } from "../ui/label"
 import { textToSpeechSchema, type TextToSpeechFormValues } from "./form-schema"
 import { textSuggestions } from "./constants"
 import VoiceAudioPlayer from "../single-voice/voice-audio-player"
+import type { Voice } from "../single-voice/types"
 
 const MAX_TEXT_LENGTH = 2000
 
@@ -51,8 +53,27 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
 
   const text = useWatch({ control: form.control, name: "text" })
   const selectedVoiceId = useWatch({ control: form.control, name: "voiceId" })
+  const selectedProvider = useWatch({ control: form.control, name: "provider" })
   const voicesQuery = useVoices()
-  const selectedVoice = voicesQuery.data?.find((voice) => voice.id === selectedVoiceId)
+  const selectedOpenAIVoice = selectedProvider === "openai"
+    ? openai_voices.find((voice) => voice.name === selectedVoiceId)
+    : undefined
+  const selectedVoice = selectedOpenAIVoice
+    ? ({
+        id: selectedOpenAIVoice.name,
+        user_id: "",
+        name: selectedOpenAIVoice.label,
+        description: "",
+        category: "general",
+        language: "en",
+        variant: "system",
+        status: "private",
+        reference_text: null,
+        audio_url: "",
+        avatar_url: null,
+        created_at: "",
+      } as Voice)
+    : voicesQuery.data?.find((voice) => voice.id === selectedVoiceId)
   const textTooLong = text.length > MAX_TEXT_LENGTH
 
   function handleGenerate(values: TextToSpeechFormValues) {
@@ -69,11 +90,8 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
         "cfg_weight": values.cfg_weight,
         "temperature": values.temperature,
         "repetition_penalty": values.repetition_penalty,
-        "provider": values.provider
       }
     }
-
-
     generateTextMutate(payload, {
       onSuccess: (data) => {
         setAudioUrl(data.audio_url)
@@ -92,7 +110,11 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             <h1 className="text-2xl font-semibold">{t("title")}</h1>
             {selectedVoice && (
               <div className="mt-3 flex min-w-0 items-center gap-3">
-                <VoiceAvatar seed={selectedVoice.id} avatar={selectedVoice.avatar_url ?? undefined} name={selectedVoice.name} className="size-12" />
+                {selectedOpenAIVoice ? (
+                  <VoiceOrb seed={selectedOpenAIVoice.name} size={48} />
+                ) : (
+                  <VoiceAvatar seed={selectedVoice.id} avatar={selectedVoice.avatar_url ?? undefined} name={selectedVoice.name} className="size-12" />
+                )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{selectedVoice.name}</p>
                   <p className="truncate text-xs text-muted-foreground">
@@ -202,7 +224,6 @@ export const TextToSpeech = ({ voiceId }: { voiceId?: string }) => {
             />
           )}
         </section>
-        <section className='h-[500px]'></section>
       </main>
 
       <aside

@@ -26,19 +26,22 @@ from app.core.config import settings
 from botocore.exceptions import BotoCoreError, ClientError
 from app.exceptions.handlers import ServiceUnavailableException
 
+from collections.abc import Callable
+from app.providers.openai.provider import openai_voices
+
 class GenerationService:
     def __init__(
             self,
             db: AsyncSession,
             voice_db: AsyncSession,
-            tts_provider: TTSProvider,
+            provider_factory: Callable[[str | None], TTSProvider],
             storage: StorageBackend,
             voice_service: VoiceService,
             s3_client: Any | None = None
     ):
         self.db = db 
         self.voice_db = voice_db
-        self.tts_provider = tts_provider 
+        self.provider_factory = provider_factory
         self.storage = storage
         self.voice_service = voice_service
         self.s3_client = s3_client or create_s3_client()
@@ -49,39 +52,55 @@ class GenerationService:
         user_id: str,
     ):
         self._validate(request)
+        provider = self.provider_factory(request.provider)
+        capabilities = provider.capabilities()
+
+        if not capabilities.supports_voice_cloning and not capabilities.supports_predefined_voices:
+            raise InvalidRequestError(
+                "This provider does not support voice references or preset voices."
+            )
+
+        if request.language.lower() not in capabilities.supported_languages:
+            raise InvalidRequestError(f"Unsupported language: {request.language}")
 
         if not user_id:
             raise InvalidRequestError("An authenticated user is required.")
 
-        voice, reference_audio = await self.voice_service.get_voice_reference_audio(
-            self.voice_db,
-            request.voice_id,
-            user_id,
-        )
+        if capabilities.supports_voice_cloning:
+            voice, reference_audio = await self.voice_service.get_voice_reference_audio(
+                self.voice_db,
+                request.voice_id,
+                user_id,
+            )
+            generation_voice_id = request.voice_id
+            voice_name = voice.name if hasattr(voice, "name") else voice["name"]
+            provider_voice = None
+        else:
+            if request.voice_id not in openai_voices:
+                raise InvalidRequestError("Unsupported OpenAI voice.")
+            reference_audio = None
+            generation_voice_id = None
+            voice_name = request.voice_id
+            provider_voice = request.voice_id
+
         # Voice lookup is complete. Release its read connection while the
         # model runs, which can take several minutes.
         if self.voice_db is not None:
             await self.voice_db.commit()
 
-        if not self.tts_provider.capabilities().supports_voice_cloning:
-            raise InvalidRequestError(
-                "The configured speech provider does not support stored voice references."
-            )
-        
         record = Generation(
             user_id=user_id,
-            voice_id=request.voice_id,
+            voice_id=generation_voice_id,
             text=request.text,
-            voice_name=voice.name,
-            # Older local SQLite databases may still enforce NOT NULL here
-            # until they are rebuilt/migrated. The final key is written below.
+            voice_name=voice_name,
             s3_object_key="",
             temperature=request.metadata.get("temperature", 0.8),
             top_p=request.metadata.get("top_p", 0.95),
             top_k=request.metadata.get("top_k", 1000),
             repetition_penalty=request.metadata.get("repetition_penalty", 1.2),
             status=VisibilityStatus.PRIVATE,
-            # provider=self.tts_provider.__class__.__name__
+            provider=request.provider
+            # provider=provider.__class__.__name__
         )
 
         self.db.add(record)
@@ -93,25 +112,44 @@ class GenerationService:
         await self.db.commit()
 
         try:
-            with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
-                reference_path = Path(temp_dir) / "reference.wav"
-                reference_path.write_bytes(reference_audio)
-                result = await self.tts_provider.generate(
+            if reference_audio is None:
+                result = await provider.generate(
                     text=request.text,
-                    voice_reference=str(reference_path),
+                    voice_reference=provider_voice,
                     language=request.language,
                     metadata=request.metadata
                 )
+            else:
+                with TemporaryDirectory(prefix="voice-reference-") as temp_dir:
+                    reference_path = Path(temp_dir) / "reference.wav"
+                    reference_path.write_bytes(reference_audio)
+                    result = await provider.generate(
+                        text=request.text,
+                        voice_reference=str(reference_path),
+                        language=request.language,
+                        metadata=request.metadata
+                    )
     
             storage_key = f"generations/{user_id}/{generation_id}.{result.format}"
             # self.storage.save_bytes(storage_key, result.data, content_type=f"audio/{result.format}")
+
+            content_types = {
+                "wav": "audio/wav",
+                "mp3": "audio/mpeg",
+                "ogg": "audio/ogg"
+            }
+
+            content_type = content_types.get(result.format.lower())
+
+            if content_type is None:
+                raise InvalidRequestError("Unsupported audio format")
 
             await asyncio.to_thread(
                 self.s3_client.put_object,
                 Bucket=settings.BUCKET_NAME,
                 Key=storage_key,
                 Body=result.data,
-                ContentType=result.format
+                ContentType=content_type
             )
 
 

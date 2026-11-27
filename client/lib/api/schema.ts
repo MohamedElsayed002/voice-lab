@@ -471,7 +471,7 @@ export interface components {
             /** Id */
             id: string;
             /** Voice Id */
-            voice_id: string;
+            voice_id: string | null;
             /** Voice Name */
             voice_name: string;
             /** Text */

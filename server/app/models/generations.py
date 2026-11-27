@@ -23,10 +23,10 @@ class Generation(Base):
     user_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    voice_id: Mapped[str] = mapped_column(
+    voice_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("voices.id", name="fk_generations_voice_id_voices", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
     )
     text: Mapped[str] = mapped_column(Text, nullable=False)
     voice_name: Mapped[str] = mapped_column(String(256), nullable=False)
@@ -44,6 +44,11 @@ class Generation(Base):
         nullable=False,
         default=VisibilityStatus.PRIVATE,
         server_default=VisibilityStatus.PRIVATE.value,
+    )
+
+    provider: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False
     )
 
     user: Mapped["User"] = relationship(back_populates="generations")

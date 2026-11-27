@@ -27,6 +27,19 @@ const languages = [
   { code: "ar", Flag: EG },
 ]
 
+export const openai_voices = [
+  {name: "alloy", label: "Alloy"},
+  {name: "ash", label: "Ash"},
+  {name: "ballad", label: "Ballad"},
+  {name: "cedar", label: "Cedar"},
+  {name: "coral", label:"Coral"},
+  {name: "echo", label: "Echo"},
+  {name: "marin", label: "Marin"},
+  {name: "sage", label: "Sage"},
+  {name: "shimmer", label: "Shimmer"},
+  {name: "verse", label: "Verse"}
+]
+
 const providers = [
   { id: 'chatterbox-turbo', name: 'Chatterbox Turbo' },
   { id: 'chatterbox', name: 'Chatterbox Multilingual V2' },
@@ -41,112 +54,25 @@ export const Settings = ({
   const t = useTranslations("TextToSpeech")
   const voicesQuery = useVoices()
   const voices = voicesQuery.data ?? []
+  const watchProvider = form.watch("provider")
   const voiceId = form.watch("voiceId")
   const selectedVoice = voices.find((voice) => voice.id === voiceId)
+  const selectedOpenAIVoice = openai_voices.find((voice) => voice.name === voiceId)
   const requestedVoiceIsUnavailable =
-    Boolean(voiceId) && voicesQuery.isSuccess && !selectedVoice
+    watchProvider !== "openai" && Boolean(voiceId) && voicesQuery.isSuccess && !selectedVoice
 
   const helperText = requestedVoiceIsUnavailable
     ? t("voiceUnavailable")
-    : selectedVoice
+    : selectedOpenAIVoice
+      ? "English · OpenAI voice"
+      : selectedVoice
       ? `${selectedVoice.language} · ${selectedVoice.category.replaceAll("_", " ")}`
       : t("chooseVoice")
 
+
+
   return (
     <section className="space-y-7" aria-label={t("speechSettings")}>
-      <div className="space-y-2">
-        <label htmlFor="speech-voice" className="text-sm font-medium">
-          {t("voice")}
-        </label>
-        <Controller
-          control={form.control}
-          name="voiceId"
-          render={({ field }) => (
-            <Select
-              value={field.value || null}
-              onValueChange={(value) => field.onChange(typeof value === "string" ? value : "")}
-              disabled={voicesQuery.isPending || voices.length === 0}
-            >
-              <SelectTrigger
-                id="speech-voice"
-                className="h-12 w-full justify-start gap-2.5 rounded-xl px-2.5"
-                aria-describedby="speech-voice-description"
-                aria-busy={voicesQuery.isPending}
-              >
-                {selectedVoice && (
-                  selectedVoice.avatar_url ? (
-                    <VoiceAvatar
-                      seed={selectedVoice.id}
-                      name={selectedVoice.name}
-                      avatar={selectedVoice.avatar_url}
-                      className="size-7 shrink-0"
-                    />
-                  ) : (
-                    <VoiceOrb seed={selectedVoice.id} size={28} />
-                  )
-                )}
-                <SelectValue className="min-w-0 flex-1">
-                  {(value: unknown) => {
-                    const voice = typeof value === "string"
-                      ? voices.find((item) => item.id === value)
-                      : undefined
-
-                    if (voice) return voice.name
-                    if (voicesQuery.isPending) return t("loadingVoices")
-                    if (voicesQuery.isError) return t("voicesUnavailable")
-                    if (voices.length === 0) return t("noVoices")
-                    return t("chooseVoicePlaceholder")
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectLabel>{t("availableVoices")}</SelectLabel>
-                  {voices.map((voice) => (
-                    <SelectItem
-                      key={voice.id}
-                      value={voice.id}
-                      className="min-h-14 px-2 py-2"
-                    >
-                      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-                        <span className="flex w-full min-w-0 items-center gap-2.5">
-                          {voice.avatar_url ? <VoiceAvatar name={voice.name} seed={voice.name} avatar={voice.avatar_url} className="size-8 rounded-full" /> : <VoiceOrb seed={voice.name} size={24} />}
-                          <span className="truncate font-medium">{voice.name}</span>
-                        </span>
-                        <span className="pl-9 text-xs text-muted-foreground">
-                          {voice.language} · {voice.variant}
-                        </span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-        />
-        <p id="speech-voice-description" className="text-xs text-muted-foreground">
-          {helperText}
-        </p>
-        {form.formState.errors.voiceId?.message && (
-          <p role="alert" className="text-xs text-destructive">
-            {t("chooseVoice")}
-          </p>
-        )}
-        {voicesQuery.isError && (
-          <div className="flex items-center justify-between gap-3 text-xs text-destructive">
-            <span>{t("loadVoicesError")}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => void voicesQuery.refetch()}
-            >
-              {t("retry")}
-            </Button>
-          </div>
-        )}
-      </div>
-
       <div>
         <label htmlFor="voice-provider" className="text-sm font-medium">
           {t("provider")}
@@ -162,7 +88,18 @@ export const Settings = ({
             return (
               <Select
                 value={field.value || null}
-                onValueChange={(value) => field.onChange(typeof value === "string" ? value : "")}
+                onValueChange={(value) => {
+                  const provider = typeof value === "string" ? value : ""
+                  field.onChange(provider)
+                  if (provider === "chatterbox-turbo") {
+                    form.setValue("language", "en", { shouldValidate: true })
+                  }
+                  if (provider === "openai") {
+                    form.setValue("voiceId", openai_voices[0].name, { shouldValidate: true })
+                  } else if (openai_voices.some((voice) => voice.name === form.getValues("voiceId"))) {
+                    form.setValue("voiceId", "", { shouldValidate: true })
+                  }
+                }}
               >
                 <SelectTrigger
                   id="voice-provider"
@@ -187,6 +124,117 @@ export const Settings = ({
           }}
         />
       </div>
+      <div className="space-y-2">
+        <label htmlFor="speech-voice" className="text-sm font-medium">
+          {t("voice")}
+        </label>
+        <Controller
+          control={form.control}
+          name="voiceId"
+          render={({ field }) => (
+            <Select
+              value={field.value || null}
+              onValueChange={(value) => field.onChange(typeof value === "string" ? value : "")}
+              disabled={watchProvider === "openai" ? false : voicesQuery.isPending || voices.length === 0}
+            >
+              <SelectTrigger
+                id="speech-voice"
+                className="h-12 w-full justify-start gap-2.5 rounded-xl px-2.5"
+                aria-describedby="speech-voice-description"
+                aria-busy={watchProvider !== "openai" && voicesQuery.isPending}
+              >
+                {watchProvider === "openai" && selectedOpenAIVoice ? (
+                  <VoiceOrb seed={selectedOpenAIVoice.name} size={28} />
+                ) : selectedVoice && (
+                  selectedVoice.avatar_url ? (
+                    <VoiceAvatar
+                      seed={selectedVoice.id}
+                      name={selectedVoice.name}
+                      avatar={selectedVoice.avatar_url}
+                      className="size-7 shrink-0"
+                    />
+                  ) : (
+                    <VoiceOrb seed={selectedVoice.id} size={28} />
+                  )
+                )}
+                <SelectValue className="min-w-0 flex-1">
+                  {(value: unknown) => {
+                    const openAIVoice = typeof value === "string" && watchProvider === "openai"
+                      ? openai_voices.find((item) => item.name === value)
+                      : undefined
+                    const voice = typeof value === "string"
+                      ? voices.find((item) => item.id === value)
+                      : undefined
+
+                    if (openAIVoice) return openAIVoice.label
+                    if (voice) return voice.name
+                    if (voicesQuery.isPending) return t("loadingVoices")
+                    if (voicesQuery.isError) return t("voicesUnavailable")
+                    if (voices.length === 0) return t("noVoices")
+                    return t("chooseVoicePlaceholder")
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>{t("availableVoices")}</SelectLabel>
+                  {watchProvider === "openai" ? openai_voices.map((voice) => (
+                    <SelectItem key={voice.name} value={voice.name} className="min-h-12 px-2 py-2">
+                      <span className="flex items-center gap-2.5">
+                        <VoiceOrb seed={voice.name} size={28} />
+                        <span>{voice.label}</span>
+                      </span>
+                    </SelectItem>
+                  )) : voices.map((voice) => {
+                    return (
+                      (
+                        <SelectItem
+                          key={voice.id}
+                          value={voice.id}
+                          className="min-h-14 px-2 py-2"
+                        >
+                          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+                            <span className="flex w-full min-w-0 items-center gap-2.5">
+                              {voice.avatar_url ? <VoiceAvatar name={voice.name} seed={voice.name} avatar={voice.avatar_url} className="size-8 rounded-full" /> : <VoiceOrb seed={voice.name} size={24} />}
+                              <span className="truncate font-medium">{voice.name}</span>
+                            </span>
+                            <span className="pl-9 text-xs text-muted-foreground">
+                              {voice.language} · {voice.variant}
+                            </span>
+                          </span>
+                        </SelectItem>
+                      )
+                    )
+                  })}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
+        />
+        <p id="speech-voice-description" className="text-xs text-muted-foreground">
+          {helperText}
+        </p>
+        {form.formState.errors.voiceId?.message && (
+          <p role="alert" className="text-xs text-destructive">
+            {t("chooseVoice")}
+          </p>
+        )}
+        {watchProvider !== "openai" && voicesQuery.isError && (
+          <div className="flex items-center justify-between gap-3 text-xs text-destructive">
+            <span>{t("loadVoicesError")}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => void voicesQuery.refetch()}
+            >
+              {t("retry")}
+            </Button>
+          </div>
+        )}
+      </div>
+
+
 
 
       <div>
@@ -226,12 +274,16 @@ export const Settings = ({
                 <SelectContent>
                   <SelectGroup>
                     <SelectLabel>{t("availableLanguages")}</SelectLabel>
-                    {languages.map((language) => (
-                      <SelectItem key={language.code} value={language.code}>
-                        <language.Flag className="h-4 w-4 rounded-sm" />
-                        <span>{t(language.code === "en" ? "english" : language.code === "de" ? "german" : "arabic")}</span>
-                      </SelectItem>
-                    ))}
+                    {languages
+                      .filter((language) =>
+                        watchProvider !== "chatterbox-turbo" || language.code === "en"
+                      )
+                      .map((language) => (
+                        <SelectItem key={language.code} value={language.code}>
+                          <language.Flag className="h-4 w-4 rounded-sm" />
+                          <span>{t(language.code === "en" ? "english" : language.code === "de" ? "german" : "arabic")}</span>
+                        </SelectItem>
+                      ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>

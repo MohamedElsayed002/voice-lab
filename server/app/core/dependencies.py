@@ -52,6 +52,7 @@ def get_tts_provider(provider_name: str | None = None) -> TTSProvider:
             client=client,
             model=settings.openai_tts_model,
             voice=settings.openai_tts_voice,
+            # voice=""
         )
         _created_tts_providers.append(provider)
         return provider

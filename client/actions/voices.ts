@@ -73,7 +73,6 @@ export async function getUserCustomVoice(voiceId: string) {
 export async function generateTTS(voice_id: string, language: string,provider: string, text: string, metadata: VoiceMetadata) {
   const token = await getApiAccessToken()
   if (!token) throw new Error("Sign in to generate speech.")
-  console.log(voice_id, text,metadata)
   const { data, response, error } = await api.POST("/generation", {
     headers: {
       Authorization: `Bearer ${token}`,
